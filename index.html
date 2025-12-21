@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YouTube Overlay Mixer (2–5 layers)</title>
+  <style>
+    :root { --maxw: 1100px; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 16px; }
+    h2 { margin: 0 0 10px; }
+    .row { display: grid; gap: 12px; max-width: var(--maxw); }
+    .topbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button { padding: 10px 12px; font-size: 16px; }
+    .stage {
+      position: relative;
+      width: min(96vw, var(--maxw));
+      aspect-ratio: 16 / 9;
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* Layers */
+    .layer {
+      position: absolute;
+      inset: 0;
+      transform-origin: 0 0;
+      pointer-events: none; /* keep top layers from stealing taps/clicks */
+    }
+    .layer.base { pointer-events: auto; } /* allow interacting with base */
+    .layer iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+    /* UI cards */
+    .layers {
+      display: grid;
+      gap: 12px;
+    }
+    .card {
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff;
+    }
+    .card header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .card header .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .card header .title { font-weight: 700; }
+    .card header label { display: inline-flex; gap: 6px; align-items: center; }
+    input[type="text"] { width: min(100%, 740px); padding: 10px; font-size: 16px; }
+    .grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+      input[type="text"] { width: 100%; }
+    }
+    label { display: grid; gap: 6px; }
+    select, input[type="range"] { width: 100%; }
+    .tiny { font-size: 13px; opacity: .8; }
+    .mutebtn { padding: 8px 10px; font-size: 14px; }
+    .pill {
+      font-size: 12px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.15);
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <h2>YouTube Overlay Mixer (2–5 layers)</h2>
+
+    <div class="topbar">
+      <button id="loadBtn">Load / Reload</button>
+      <button id="playBtn">Play (tap on mobile)</button>
+      <button id="pauseBtn">Pause</button>
+      <button id="stopBtn">Stop</button>
+      <span class="pill">Tip: set Layer 1 as “base”</span>
+    </div>
+
+    <div class="stage" id="stage">
+      <div id="layer0" class="layer base"></div>
+      <div id="layer1" class="layer"></div>
+      <div id="layer2" class="layer"></div>
+      <div id="layer3" class="layer"></div>
+      <div id="layer4" class="layer"></div>
+    </div>
+
+    <div class="layers" id="layersUI"></div>
+
+    <div class="tiny">
+      This uses stacked YouTube iframes + CSS blend modes/filters to “fake” keying.
+      It cannot do real luma key (pixel threshold) on YouTube embeds.
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    const MAX_LAYERS = 5;
+    const players = new Array(MAX_LAYERS).fill(null);
+
+    // Per-layer state (UI -> CSS)
+    const state = Array.from({length: MAX_LAYERS}, (_, i) => ({
+      enabled: i < 2, // default 2 layers enabled
+      url: "",
+      opacity: i === 0 ? 1 : 0.6,
+      blend: i === 0 ? "normal" : "screen",
+      scale: 1,
+      x: 0,
+      y: 0,
+      invert: 0,
+      contrast: 1.2,
+      brightness: 1,
+      saturate: 1,
+      hue: 0,
+      muted: i !== 0 // mute overlays by default
+    }));
+
+    const blendModes = [
+      "normal","multiply","screen","overlay","darken","lighten","color-dodge","color-burn",
+      "hard-light","soft-light","difference","exclusion","hue","saturation","color","luminosity"
+    ];
+
+    function extractVideoId(url) {
+      if (!url) return null;
+      const raw = url.trim();
+      // If user pasted just an 11-char ID
+      if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+
+      try {
+        const u = new URL(raw);
+        if (u.hostname.includes("youtu.be")) return u.pathname.replace("/", "") || null;
+        const v = u.searchParams.get("v");
+        if (v) return v;
+        const parts = u.pathname.split("/").filter(Boolean);
+        const embedIdx = parts.indexOf("embed");
+        if (embedIdx >= 0 && parts[embedIdx + 1]) return parts[embedIdx + 1];
+      } catch (e) {}
+      return null;
+    }
+
+    function ensureLayerContainer(i) {
+      const layer = document.getElementById(`layer${i}`);
+      layer.innerHTML = `<div id="player${i}"></div>`;
+      return layer;
+    }
+
+    function makePlayer(i, videoId) {
+      // If already exists, destroy it before recreating
+      if (players[i] && players[i].destroy) {
+        try { players[i].destroy(); } catch(e) {}
+        players[i] = null;
+      }
+
+      return new YT.Player(`player${i}`, {
+        videoId,
+        playerVars: {
+          playsinline: 1,
+          rel: 0
+        },
+        events: {
+          onReady: (e) => {
+            if (state[i].muted) e.target.mute(); else e.target.unMute();
+          }
+        }
+      });
+    }
+
+    function applyLayerCSS(i) {
+      const layer = document.getElementById(`layer${i}`);
+      const s = state[i];
+
+      // Hide disabled layers (but keep base visible if enabled)
+      layer.style.display = s.enabled ? "block" : "none";
+
+      layer.style.opacity = s.opacity;
+      layer.style.mixBlendMode = s.blend;
+      layer.style.transform = `translate(${s.x}%, ${s.y}%) scale(${s.scale})`;
+      layer.style.filter =
+        `invert(${s.invert}) contrast(${s.contrast}) brightness(${s.brightness}) saturate(${s.saturate}) hue-rotate(${s.hue}deg)`;
+    }
+
+    function applyAllCSS() {
+      for (let i = 0; i < MAX_LAYERS; i++) applyLayerCSS(i);
+      // Make layer0 the only interactive one
+      for (let i = 0; i < MAX_LAYERS; i++) {
+        const layer = document.getElementById(`layer${i}`);
+        layer.classList.toggle("base", i === 0);
+      }
+    }
+
+    function uiCard(i) {
+      const s = state[i];
+      const opts = blendModes.map(m => `<option value="${m}">${m}</option>`).join("");
+
+      return `
+        <div class="card" data-i="${i}">
+          <header>
+            <div class="left">
+              <span class="title">Layer ${i+1}</span>
+              <label>
+                <input type="checkbox" class="enabled" ${s.enabled ? "checked" : ""}/>
+                enabled
+              </label>
+              <button class="mutebtn mute">${s.muted ? "Unmute" : "Mute"}</button>
+            </div>
+            <span class="pill">${i===0 ? "Base (bottom)" : "Overlay"}</span>
+          </header>
+
+          <input class="url" type="text" placeholder="Paste YouTube URL or 11-char video ID"
+                 value="${escapeHtml(s.url)}" />
+
+          <div class="grid">
+            <label>Opacity
+              <input class="opacity" type="range" min="0" max="1" step="0.01" value="${s.opacity}">
+            </label>
+
+            <label>Blend mode
+              <select class="blend">${opts}</select>
+            </label>
+
+            <label>Scale
+              <input class="scale" type="range" min="0.3" max="1.8" step="0.01" value="${s.scale}">
+            </label>
+
+            <label>X (percent)
+              <input class="x" type="range" min="-50" max="50" step="1" value="${s.x}">
+            </label>
+
+            <label>Y (percent)
+              <input class="y" type="range" min="-50" max="50" step="1" value="${s.y}">
+            </label>
+
+            <label>Invert
+              <input class="invert" type="range" min="0" max="1" step="0.01" value="${s.invert}">
+            </label>
+
+            <label>Contrast
+              <input class="contrast" type="range" min="0.5" max="3.0" step="0.01" value="${s.contrast}">
+            </label>
+
+            <label>Brightness
+              <input class="brightness" type="range" min="0.2" max="2.0" step="0.01" value="${s.brightness}">
+            </label>
+
+            <label>Saturation
+              <input class="saturate" type="range" min="0" max="3.0" step="0.01" value="${s.saturate}">
+            </label>
+
+            <label>Hue rotate
+              <input class="hue" type="range" min="0" max="360" step="1" value="${s.hue}">
+            </label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderUI() {
+      const wrap = document.getElementById("layersUI");
+      wrap.innerHTML = Array.from({length: MAX_LAYERS}, (_, i) => uiCard(i)).join("");
+
+      // Set blend selects to current values
+      wrap.querySelectorAll(".card").forEach(card => {
+        const i = +card.dataset.i;
+        card.querySelector(".blend").value = state[i].blend;
+      });
+
+      // Wire events
+      wrap.querySelectorAll(".card").forEach(card => {
+        const i = +card.dataset.i;
+
+        const q = (sel) => card.querySelector(sel);
+
+        q(".enabled").addEventListener("change", (e) => {
+          state[i].enabled = e.target.checked;
+          applyLayerCSS(i);
+        });
+
+        q(".url").addEventListener("change", (e) => {
+          state[i].url = e.target.value;
+        });
+
+        q(".mute").addEventListener("click", () => {
+          state[i].muted = !state[i].muted;
+          q(".mute").textContent = state[i].muted ? "Unmute" : "Mute";
+          const p = players[i];
+          if (p && p.mute) {
+            try { state[i].muted ? p.mute() : p.unMute(); } catch(e) {}
+          }
+        });
+
+        const bindRange = (cls, key, parser = parseFloat) => {
+          q(cls).addEventListener("input", (e) => {
+            state[i][key] = parser(e.target.value);
+            applyLayerCSS(i);
+          });
+        };
+
+        bindRange(".opacity", "opacity");
+        q(".blend").addEventListener("change", (e) => { state[i].blend = e.target.value; applyLayerCSS(i); });
+
+        bindRange(".scale", "scale");
+        bindRange(".x", "x", v => parseInt(v, 10));
+        bindRange(".y", "y", v => parseInt(v, 10));
+
+        bindRange(".invert", "invert");
+        bindRange(".contrast", "contrast");
+        bindRange(".brightness", "brightness");
+        bindRange(".saturate", "saturate");
+        bindRange(".hue", "hue", v => parseInt(v, 10));
+      });
+    }
+
+    function escapeHtml(s) {
+      return (s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    // Called by YouTube IFrame API when ready
+    function onYouTubeIframeAPIReady() {
+      // UI can render before/after; loading happens via button
+    }
+
+    function loadAll() {
+      // Build players only for enabled layers with valid URLs
+      for (let i = 0; i < MAX_LAYERS; i++) {
+        const layer = document.getElementById(`layer${i}`);
+
+        if (!state[i].enabled) {
+          layer.style.display = "none";
+          // Destroy existing if disabled
+          if (players[i] && players[i].destroy) {
+            try { players[i].destroy(); } catch(e) {}
+            players[i] = null;
+          }
+          continue;
+        }
+
+        const id = extractVideoId(state[i].url);
+        if (!id) {
+          // If enabled but no URL, just hide layer until provided
+          layer.style.display = "none";
+          if (players[i] && players[i].destroy) {
+            try { players[i].destroy(); } catch(e) {}
+            players[i] = null;
+          }
+          continue;
+        }
+
+        ensureLayerContainer(i);
+        layer.style.display = "block";
+        players[i] = makePlayer(i, id);
+      }
+
+      applyAllCSS();
+    }
+
+    function playAll() {
+      // Must be user-initiated on mobile; this is tied to a button.
+      for (let i = 0; i < MAX_LAYERS; i++) {
+        if (!state[i].enabled) continue;
+        const p = players[i];
+        if (!p || !p.playVideo) continue;
+        try { p.playVideo(); } catch(e) {}
+      }
+    }
+
+    function pauseAll() {
+      for (let i = 0; i < MAX_LAYERS; i++) {
+        const p = players[i];
+        if (!p || !p.pauseVideo) continue;
+        try { p.pauseVideo(); } catch(e) {}
+      }
+    }
+
+    function stopAll() {
+      for (let i = 0; i < MAX_LAYERS; i++) {
+        const p = players[i];
+        if (!p || !p.stopVideo) continue;
+        try { p.stopVideo(); } catch(e) {}
+      }
+    }
+
+    // Defaults
+    function setDefaultUrlsIfEmpty() {
+      // Optional: leave blank; user pastes URLs.
+      // state[0].url = "https://www.youtube.com/watch?v=VIDEOID1";
+      // state[1].url = "https://www.youtube.com/watch?v=VIDEOID2";
+    }
+
+    // Boot
+    setDefaultUrlsIfEmpty();
+    renderUI();
+    applyAllCSS();
+
+    document.getElementById("loadBtn").addEventListener("click", loadAll);
+    document.getElementById("playBtn").addEventListener("click", playAll);
+    document.getElementById("pauseBtn").addEventListener("click", pauseAll);
+    document.getElementById("stopBtn").addEventListener("click", stopAll);
+  </script>
+</body>
+</html>
