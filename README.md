@@ -1,4 +1,4 @@
 # WebVJ
-WebVJ Idea, starting with youtube video overlay and blend capabilities, will further develop other vj features.
+WebVJ Idea, FX mode works best in chrome, FX mode not available on mobile.
 
 https://santismo.github.io/WebVJ/
