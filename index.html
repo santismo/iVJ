@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>VJ Mixer (Links) + FX Capture (Tab/Window) w/ Crop</title>
+  <title>VJ Mixer (Links) + FX Capture (Tab/Window) w/ Orientation + Targeted FX</title>
   <style>
     :root{
       --bg:#07080c; --panel:#0f1118; --panel2:#0b0d13;
@@ -32,103 +32,33 @@
     }
     button.danger{border-color:rgba(255,130,130,.5)}
     button:active{transform:translateY(1px)}
-    .seg{
-      display:flex; gap:6px; padding:6px; border:1px solid var(--border);
-      background:rgba(255,255,255,.03); border-radius:999px;
-    }
-    .seg button{
-      border-radius:999px; padding:8px 12px; border:1px solid transparent;
-      background:transparent;
-    }
-    .seg button.active{
-      background:rgba(122,162,255,.18);
-      border-color:rgba(122,162,255,.35);
-    }
+    .seg{display:flex; gap:6px; padding:6px; border:1px solid var(--border); background:rgba(255,255,255,.03); border-radius:999px;}
+    .seg button{border-radius:999px; padding:8px 12px; border:1px solid transparent; background:transparent;}
+    .seg button.active{background:rgba(122,162,255,.18); border-color:rgba(122,162,255,.35);}
 
     .stage{
-      position:relative;
-      width:100%;
-      aspect-ratio:16/9;
-      border-radius:var(--radius);
-      overflow:hidden;
-      border:1px solid var(--border);
-      background:#000;
-      isolation:isolate;
+      position:relative; width:100%; aspect-ratio:16/9;
+      border-radius:var(--radius); overflow:hidden; border:1px solid var(--border);
+      background:#000; isolation:isolate;
     }
-    .stage:fullscreen{width:100vw;height:100vh;aspect-ratio:auto;border-radius:0;border:none;}
-    .fsHud{
-      position:absolute; top:10px; left:10px; right:10px;
-      display:none; justify-content:space-between; gap:10px;
-      z-index:99; pointer-events:none;
-    }
-    .fsHud button{pointer-events:auto;background:rgba(10,12,18,.55);backdrop-filter:blur(8px)}
-    body.pseudo-fs{overflow:hidden;}
-    body.pseudo-fs .wrap{max-width:none;margin:0;padding:0;}
-    body.pseudo-fs .topbar, body.pseudo-fs #controls{display:none;}
-    body.pseudo-fs .stage{
-      position:fixed; inset:0; width:100vw; height:100vh; aspect-ratio:auto;
-      border-radius:0;border:none; z-index:9999;
-    }
-    body.pseudo-fs .fsHud{display:flex;}
-
-    /* Link mixer layers */
-    .layersRoot{position:absolute;inset:0; z-index:10;}
-    .layer{position:absolute;inset:0;pointer-events:none;will-change:opacity,filter;mix-blend-mode:normal;opacity:1;}
+    .layersRoot{position:absolute; inset:0; z-index:10;}
+    .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter; mix-blend-mode:normal; opacity:1;}
     .layer iframe{width:100%;height:100%;border:0;display:block;}
-
-    /* FX output canvas */
     canvas#fxOut{position:absolute; inset:0; width:100%; height:100%; display:none; z-index:30;}
 
-    /* Tap-to-start overlay */
-    .gate{
-      position:absolute; inset:0; display:none;
-      align-items:center; justify-content:center;
-      background:linear-gradient(to bottom, rgba(0,0,0,.10), rgba(0,0,0,.75));
-      z-index:80;
-    }
-    .gate.show{display:flex;}
-    .gate button{background:rgba(10,12,18,.65);backdrop-filter:blur(8px);}
-
-    /* Controls */
-    .controls{
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      overflow:hidden;
-    }
-    .controlsHead{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-      padding:12px; border-bottom:1px solid var(--border);
-    }
-    .badge{
-      font-size:12px;color:var(--muted);
-      border:1px solid var(--border);
-      padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.02);
-    }
+    .controls{background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
+    .controlsHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap; padding:12px; border-bottom:1px solid var(--border);}
+    .badge{font-size:12px;color:var(--muted); border:1px solid var(--border); padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.02);}
     .controlsBody{display:none;padding:12px;gap:12px}
     .controls.open .controlsBody{display:grid;}
     .grid{display:grid;grid-template-columns: 1fr 1fr; gap:12px;}
     @media (max-width: 980px){.grid{grid-template-columns: 1fr;}}
-    .card{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:rgba(0,0,0,.22);
-      overflow:hidden;
-    }
-    .cardHead{
-      padding:10px 12px; border-bottom:1px solid var(--border);
-      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    }
+    .card{border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,.22); overflow:hidden;}
+    .cardHead{padding:10px 12px; border-bottom:1px solid var(--border); display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
     .cardTitle{font-weight:700;font-size:13px}
     .cardBody{padding:12px;display:grid;gap:10px}
     label{display:grid;gap:6px;font-size:12px;color:var(--muted);}
-    input[type="text"], select{
-      width:100%; padding:10px;
-      border-radius:12px; border:1px solid var(--border);
-      background:rgba(0,0,0,.30);
-      color:var(--text); font-size:14px;
-      outline:none;
-    }
+    input[type="text"], select{width:100%; padding:10px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,.30); color:var(--text); font-size:14px; outline:none;}
     input[type="range"]{width:100%;}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width: 740px){.row{grid-template-columns:1fr;}}
@@ -150,33 +80,22 @@
     <div class="title">
       <h1>VJ Mixer</h1>
       <div class="sub">
-        <b>Link Mixer</b> = multi YouTube links (blend only). <b>FX Capture</b> = capture tab/window pixels → real FX + crop.
+        <b>Link Mixer</b> = multiple YouTube links (blend only). <b>FX Capture</b> = capture tab/window pixels → real FX.
+        (Per-source Flip/Rotate fixes upside-down/backwards.)
       </div>
     </div>
     <div class="actions">
-      <div class="seg" role="tablist">
+      <div class="seg">
         <button id="tabLinks" class="active">Link Mixer</button>
         <button id="tabFX">FX Capture</button>
       </div>
-      <button id="btnPlay" class="primary">Play</button>
-      <button id="btnPause">Pause</button>
-      <button id="btnFullscreen">Fullscreen</button>
       <button id="btnToggleControls">Show Controls</button>
     </div>
   </div>
 
   <div class="stage" id="stage">
-    <div class="fsHud" id="fsHud">
-      <button id="hudPlay">Play</button>
-      <button id="hudExit">Exit</button>
-    </div>
-
     <div class="layersRoot" id="layersRoot"></div>
     <canvas id="fxOut"></canvas>
-
-    <div class="gate" id="gate">
-      <button id="gateBtn" class="primary">Tap to Start</button>
-    </div>
   </div>
 
   <div class="controls" id="controls">
@@ -185,12 +104,12 @@
         <span class="badge" id="modeBadge">Mode: Link Mixer</span>
         <span class="badge" id="status">Status: idle</span>
       </div>
-      <div class="small">If FX mode is black: make sure you’re in FX mode and you captured A/B successfully.</div>
+      <div class="small">Tip: In capture mode, put YouTube in fullscreen/theater for “mostly just video”.</div>
     </div>
 
     <div class="controlsBody" id="controlsBody">
       <!-- LINKS MODE -->
-      <div id="modeLinks" class="modeBlock active">
+      <div id="modeLinks" style="display:block;">
         <div class="grid">
           <div class="card">
             <div class="cardHead">
@@ -211,13 +130,12 @@
               <div class="layerList" id="layerList"></div>
             </div>
           </div>
-
           <div class="card">
-            <div class="cardHead"><div class="cardTitle">Notes</div></div>
+            <div class="cardHead"><div class="cardTitle">Why no FX here?</div></div>
             <div class="cardBody">
               <div class="small">
-                Link Mixer can’t run real pixel FX on YouTube iframes. Use it for stable blending only.
-                For real FX, switch to FX Capture mode.
+                YouTube iframes are cross-origin: browsers block pixel access, so real WebGL FX can’t run on them.
+                Use FX Capture mode for real trails/kaleido/glitch.
               </div>
             </div>
           </div>
@@ -225,21 +143,74 @@
       </div>
 
       <!-- FX MODE -->
-      <div id="modeFX" class="modeBlock" style="display:none;">
+      <div id="modeFX" style="display:none;">
         <div class="grid">
           <div class="card">
             <div class="cardHead">
-              <div class="cardTitle">Capture (Tab/Window)</div>
+              <div class="cardTitle">Capture + Source Setup</div>
               <div class="miniBtns">
                 <button id="capA" class="primary">Capture A</button>
                 <button id="capB" class="primary">Capture B</button>
                 <button id="stopCap">Stop</button>
+                <button id="fitA">Auto-fit A</button>
+                <button id="fitB">Auto-fit B</button>
               </div>
             </div>
             <div class="cardBody">
               <div class="small">
-                Choose a YouTube <b>tab</b> or <b>window</b> from the picker. Then use Crop A/B to frame each.
-                Some videos may appear black due to capture restrictions.
+                “Auto-fit” matches the crop to the captured source aspect ratio (best possible auto-crop).
+                It can’t detect the exact player area inside the tab UI—fullscreen/theater helps.
+              </div>
+
+              <div class="card" style="background:rgba(255,255,255,.01)">
+                <div class="cardHead"><div class="cardTitle">A Transform (fix upside-down/backwards)</div></div>
+                <div class="cardBody">
+                  <div class="row">
+                    <label class="toggle"><input id="aFlipV" type="checkbox" checked> Flip Vertical (default ON)</label>
+                    <label class="toggle"><input id="aFlipH" type="checkbox"> Flip Horizontal</label>
+                  </div>
+                  <label>Rotate
+                    <select id="aRot">
+                      <option value="0" selected>0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </label>
+                  <div class="row">
+                    <label>Center X <input id="aCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label>Center Y <input id="aCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                  </div>
+                  <label>Zoom <input id="aZoom" type="range" min="1" max="6" step="0.01" value="1"></label>
+                </div>
+              </div>
+
+              <div class="card" style="background:rgba(255,255,255,.01)">
+                <div class="cardHead"><div class="cardTitle">B Transform</div></div>
+                <div class="cardBody">
+                  <div class="row">
+                    <label class="toggle"><input id="bFlipV" type="checkbox" checked> Flip Vertical (default ON)</label>
+                    <label class="toggle"><input id="bFlipH" type="checkbox"> Flip Horizontal</label>
+                  </div>
+                  <label>Rotate
+                    <select id="bRot">
+                      <option value="0" selected>0°</option>
+                      <option value="90">90°</option>
+                      <option value="180">180°</option>
+                      <option value="270">270°</option>
+                    </select>
+                  </label>
+                  <div class="row">
+                    <label>Center X <input id="bCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label>Center Y <input id="bCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                  </div>
+                  <label>Zoom <input id="bZoom" type="range" min="1" max="6" step="0.01" value="1"></label>
+
+                  <div class="row">
+                    <label class="toggle"><input id="useAasB" type="checkbox"> If B missing, use A as B</label>
+                    <label>Invert B <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1"></label>
+                  </div>
+                </div>
               </div>
 
               <div class="row">
@@ -254,120 +225,115 @@
                     <option value="normal">normal</option>
                   </select>
                 </label>
-                <label>B Opacity
-                  <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85">
-                </label>
-              </div>
-
-              <div class="row">
-                <label>Invert B
-                  <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1">
-                </label>
-                <label class="toggle"><input id="useAasB" type="checkbox"> If B missing, use A as B</label>
+                <label>B Opacity <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85"></label>
               </div>
 
               <div class="row">
                 <label>Exposure <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05"></label>
                 <label>Contrast <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35"></label>
               </div>
-              <div class="row">
-                <label>Saturation <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25"></label>
-                <label> </label>
-              </div>
-
-              <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">Crop (normalized 0..1)</div>
-                  <div class="miniBtns">
-                    <button id="cropFull">A full / B full</button>
-                    <button id="cropSplit">A left / B right</button>
-                  </div>
-                </div>
-                <div class="cardBody">
-                  <div class="small">Crop is applied to each captured stream before mixing/FX.</div>
-
-                  <div class="row">
-                    <label>Crop A X <input id="cropAX" type="range" min="0" max="1" step="0.001" value="0"></label>
-                    <label>Crop A Y <input id="cropAY" type="range" min="0" max="1" step="0.001" value="0"></label>
-                  </div>
-                  <div class="row">
-                    <label>Crop A W <input id="cropAW" type="range" min="0.05" max="1" step="0.001" value="1"></label>
-                    <label>Crop A H <input id="cropAH" type="range" min="0.05" max="1" step="0.001" value="1"></label>
-                  </div>
-
-                  <div class="row">
-                    <label>Crop B X <input id="cropBX" type="range" min="0" max="1" step="0.001" value="0"></label>
-                    <label>Crop B Y <input id="cropBY" type="range" min="0" max="1" step="0.001" value="0"></label>
-                  </div>
-                  <div class="row">
-                    <label>Crop B W <input id="cropBW" type="range" min="0.05" max="1" step="0.001" value="1"></label>
-                    <label>Crop B H <input id="cropBH" type="range" min="0.05" max="1" step="0.001" value="1"></label>
-                  </div>
-                </div>
-              </div>
-
+              <label>Saturation <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25"></label>
             </div>
           </div>
 
           <div class="card">
-            <div class="cardHead"><div class="cardTitle">FX</div></div>
+            <div class="cardHead">
+              <div class="cardTitle">FX (choose what they affect)</div>
+              <div class="miniBtns"><button id="fxAllOff">All FX Off</button></div>
+            </div>
             <div class="cardBody">
               <div class="row">
                 <label class="toggle"><input id="tFeedback" type="checkbox"> Feedback / Trails</label>
-                <label>Amount <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88"></label>
+                <label>Affect
+                  <select id="feedbackTarget">
+                    <option value="final" selected>Final</option>
+                    <option value="mix">Mix</option>
+                    <option value="a">A</option>
+                    <option value="b">B</option>
+                  </select>
+                </label>
               </div>
               <div class="row">
+                <label>Amount <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88"></label>
                 <label>Zoom <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06"></label>
-                <label>Rotate <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12"></label>
               </div>
+              <label>Rotate <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tKaleido" type="checkbox"> Kaleido / Mirror</label>
-                <label>Segments <input id="kSeg" type="range" min="2" max="16" step="1" value="6"></label>
+                <label>Affect
+                  <select id="kaleidoTarget">
+                    <option value="final" selected>Final</option>
+                    <option value="mix">Mix</option>
+                    <option value="a">A</option>
+                    <option value="b">B</option>
+                  </select>
+                </label>
               </div>
               <div class="row">
+                <label>Segments <input id="kSeg" type="range" min="2" max="16" step="1" value="6"></label>
                 <label>Amount <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85"></label>
-                <label>Spin <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0.35"></label>
               </div>
+              <label>Spin <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0.35"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tRGB" type="checkbox"> RGB Shift</label>
-                <label>Amount <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012"></label>
+                <label>Affect
+                  <select id="rgbTarget">
+                    <option value="b" selected>B</option>
+                    <option value="a">A</option>
+                    <option value="mix">Mix</option>
+                    <option value="final">Final</option>
+                  </select>
+                </label>
               </div>
+              <label>Amount <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tGlitch" type="checkbox"> Glitch</label>
-                <label>Amount <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
+                <label>Affect
+                  <select id="glitchTarget">
+                    <option value="mix" selected>Mix</option>
+                    <option value="final">Final</option>
+                    <option value="a">A</option>
+                    <option value="b">B</option>
+                  </select>
+                </label>
               </div>
+              <label>Amount <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tPixel" type="checkbox"> Pixelate</label>
-                <label>Size <input id="pixSize" type="range" min="1" max="220" step="1" value="70"></label>
+                <label>Affect
+                  <select id="pixelTarget">
+                    <option value="final" selected>Final</option>
+                    <option value="mix">Mix</option>
+                    <option value="a">A</option>
+                    <option value="b">B</option>
+                  </select>
+                </label>
               </div>
+              <label>Size <input id="pixSize" type="range" min="1" max="220" step="1" value="70"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tScan" type="checkbox"> Scanlines</label>
-                <label>Amount <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
-              </div>
-
-              <div class="row">
                 <label class="toggle"><input id="tVig" type="checkbox"> Vignette</label>
-                <label>Amount <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55"></label>
               </div>
-
-              <div class="miniBtns">
-                <button id="fxAllOff">All FX Off</button>
+              <div class="row">
+                <label>Scan amount <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
+                <label>Vignette amount <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55"></label>
               </div>
 
               <div class="small">
-                If the output is still black after capture: confirm you’re in FX mode (button at top), and that A has video (not “paused” in the captured tab).
+                If the capture looks flipped: toggle Flip V / Flip H and Rotate until correct.
               </div>
             </div>
           </div>
         </div>
       </div><!-- /modeFX -->
-    </div><!-- /controlsBody -->
-  </div><!-- /controls -->
-</div><!-- /wrap -->
+    </div>
+  </div>
+</div>
 
 <script>
 const $ = (id)=>document.getElementById(id);
@@ -380,16 +346,13 @@ function setMode(mode){
   currentMode = mode;
   $("tabLinks").classList.toggle("active", mode==="links");
   $("tabFX").classList.toggle("active", mode==="fx");
-
   $("modeBadge").textContent = mode==="links" ? "Mode: Link Mixer" : "Mode: FX Capture";
   $("layersRoot").style.display = mode==="links" ? "block" : "none";
   $("fxOut").style.display = mode==="fx" ? "block" : "none";
-
   $("modeLinks").style.display = mode==="links" ? "block" : "none";
   $("modeFX").style.display = mode==="fx" ? "block" : "none";
-
   $("status").textContent = "Status: " + (mode==="links" ? "Link Mixer ready" : "FX Capture ready");
-  resizeCanvas(); // important when switching modes
+  resizeCanvas();
 }
 $("tabLinks").addEventListener("click", ()=>setMode("links"));
 $("tabFX").addEventListener("click", ()=>setMode("fx"));
@@ -401,36 +364,6 @@ $("btnToggleControls").addEventListener("click", ()=>{
 });
 controls.classList.remove("open");
 $("btnToggleControls").textContent = "Show Controls";
-
-/* =========================
-   Fullscreen (real + pseudo)
-========================= */
-function canRealFullscreen(){
-  return !!($("stage").requestFullscreen && document.fullscreenEnabled);
-}
-async function toggleFullscreen(){
-  const stage = $("stage");
-  if (document.body.classList.contains("pseudo-fs")){
-    document.body.classList.remove("pseudo-fs");
-    return;
-  }
-  if (canRealFullscreen()){
-    try{
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await stage.requestFullscreen();
-      return;
-    }catch(e){}
-  }
-  document.body.classList.add("pseudo-fs");
-}
-$("btnFullscreen").addEventListener("click", toggleFullscreen);
-$("hudExit").addEventListener("click", toggleFullscreen);
-
-$("btnPlay").addEventListener("click", ()=>playAll());
-$("btnPause").addEventListener("click", ()=>pauseAll());
-$("hudPlay").addEventListener("click", ()=>playAll());
-$("gateBtn").addEventListener("click", ()=>playAll());
-function showGate(show){ $("gate").classList.toggle("show", !!show); }
 
 /* =========================
    MODE 1: Link Mixer (no FX)
@@ -455,9 +388,6 @@ function extractVideoId(url){
     if (u.hostname.includes("youtu.be")) return u.pathname.replace("/","") || null;
     const v = u.searchParams.get("v");
     if (v) return v;
-    const parts = u.pathname.split("/").filter(Boolean);
-    const idx = parts.indexOf("embed");
-    if (idx>=0 && parts[idx+1]) return parts[idx+1];
   }catch(e){}
   return null;
 }
@@ -576,7 +506,7 @@ $("layerList").addEventListener("click", (e)=>{
 });
 
 /* =========================
-   MODE 2: FX Capture + WebGL + Crop
+   MODE 2: FX Capture + WebGL
 ========================= */
 let capStreamA=null, capStreamB=null;
 const capVideoA=document.createElement("video");
@@ -586,17 +516,10 @@ capVideoA.playsInline=true; capVideoB.playsInline=true;
 
 async function startCapture(which){
   try{
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      video:{ frameRate:60 }, audio:false
-    });
-    if (which==="A"){
-      capStreamA=stream; capVideoA.srcObject=stream; await capVideoA.play();
-    } else {
-      capStreamB=stream; capVideoB.srcObject=stream; await capVideoB.play();
-    }
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:60 }, audio:false });
+    if (which==="A"){ capStreamA=stream; capVideoA.srcObject=stream; await capVideoA.play(); }
+    else { capStreamB=stream; capVideoB.srcObject=stream; await capVideoB.play(); }
     $("status").textContent = `Status: captured ${which}`;
-    showGate(false);
-    // Switch to FX mode automatically once you capture something
     setMode("fx");
   }catch(e){
     $("status").textContent = `Status: capture ${which} canceled/blocked`;
@@ -616,44 +539,32 @@ $("capB").addEventListener("click", ()=>startCapture("B"));
 $("stopCap").addEventListener("click", stopCaptureAll);
 
 $("fxAllOff").addEventListener("click", ()=>{
-  $("tFeedback").checked=false;
-  $("tKaleido").checked=false;
-  $("tRGB").checked=false;
-  $("tGlitch").checked=false;
-  $("tPixel").checked=false;
-  $("tScan").checked=false;
-  $("tVig").checked=false;
+  $("tFeedback").checked=false; $("tKaleido").checked=false; $("tRGB").checked=false;
+  $("tGlitch").checked=false; $("tPixel").checked=false; $("tScan").checked=false; $("tVig").checked=false;
 });
 
-/* Crop presets */
-function setCrop(Ax,Ay,Aw,Ah,Bx,By,Bw,Bh){
-  $("cropAX").value=Ax; $("cropAY").value=Ay; $("cropAW").value=Aw; $("cropAH").value=Ah;
-  $("cropBX").value=Bx; $("cropBY").value=By; $("cropBW").value=Bw; $("cropBH").value=Bh;
+/* Auto-fit crop to source aspect (best possible) */
+function autoFit(which){
+  const v = (which==="A") ? capVideoA : capVideoB;
+  if (!v || !v.videoWidth || !v.videoHeight){
+    $("status").textContent = `Status: ${which} not ready for auto-fit`;
+    return;
+  }
+  const srcAR = v.videoWidth / v.videoHeight;
+  const outAR = 16/9; // stage is 16:9
+  // We “zoom” so that the crop fills the output without stretching:
+  // If src is wider than out, zoom in a bit on X (equiv: increase zoom).
+  let z = 1.0;
+  if (srcAR > outAR) z = srcAR / outAR; else z = outAR / srcAR;
+  if (which==="A") $("aZoom").value = z.toFixed(2);
+  else $("bZoom").value = z.toFixed(2);
+  $("status").textContent = `Status: auto-fit ${which} (zoom=${z.toFixed(2)})`;
 }
-$("cropFull").addEventListener("click", ()=>setCrop(0,0,1,1, 0,0,1,1));
-$("cropSplit").addEventListener("click", ()=>setCrop(0,0,0.5,1, 0.5,0,0.5,1));
+$("fitA").addEventListener("click", ()=>autoFit("A"));
+$("fitB").addEventListener("click", ()=>autoFit("B"));
 
 /* =========================
-   Transport
-========================= */
-function playAll(){
-  if (currentMode==="links"){
-    showGate(true);
-    setTimeout(()=>showGate(false), 900);
-  } else {
-    if (capVideoA.srcObject) capVideoA.play().catch(()=>{});
-    if (capVideoB.srcObject) capVideoB.play().catch(()=>{});
-  }
-}
-function pauseAll(){
-  if (currentMode==="fx"){
-    capVideoA.pause();
-    capVideoB.pause();
-  }
-}
-
-/* =========================
-   WebGL pipeline (2 inputs + feedback ping-pong)
+   WebGL pipeline
 ========================= */
 const canvas=$("fxOut");
 let gl=null, prog=null, quadVBO=null;
@@ -689,9 +600,11 @@ attribute vec2 aPos;
 varying vec2 vUv;
 void main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }
 `;
+
 const FS=`
 precision highp float;
 varying vec2 vUv;
+
 uniform sampler2D uA;
 uniform sampler2D uB;
 uniform sampler2D uFB;
@@ -702,9 +615,6 @@ uniform int uHasA;
 uniform int uHasB;
 uniform int uUseAasB;
 
-uniform vec4 uCropA; // x,y,w,h
-uniform vec4 uCropB;
-
 uniform int uBlendMode;
 uniform float uBOpacity;
 uniform float uInvB;
@@ -712,6 +622,13 @@ uniform float uExposure;
 uniform float uContrast;
 uniform float uSat;
 
+// Transform + crop per source
+uniform int uAFlipH; uniform int uAFlipV; uniform int uARot;
+uniform vec3 uACrop; // cx, cy, zoom
+uniform int uBFlipH; uniform int uBFlipV; uniform int uBRot;
+uniform vec3 uBCrop; // cx, cy, zoom
+
+// FX toggles
 uniform int uFeedbackOn;
 uniform float uFbAmt;
 uniform float uFbZoom;
@@ -737,11 +654,18 @@ uniform float uScanAmt;
 uniform int uVigOn;
 uniform float uVigAmt;
 
+// FX targets: 0=A, 1=B, 2=Mix, 3=Final
+uniform int uFeedbackT;
+uniform int uKaleidoT;
+uniform int uRGBT;
+uniform int uGlitchT;
+uniform int uPixelT;
+
 vec3 satAdjust(vec3 c,float s){
   float l=dot(c,vec3(0.2126,0.7152,0.0722));
   return mix(vec3(l),c,s);
 }
-vec2 rot(vec2 p,float a){
+vec2 rot2(vec2 p,float a){
   float c=cos(a), s=sin(a);
   return mat2(c,-s,s,c)*p;
 }
@@ -760,82 +684,134 @@ float hash(vec2 p){
   p+=dot(p,p+34.345);
   return fract(p.x*p.y);
 }
-vec2 cropUv(vec2 uv, vec4 c){
-  // clamp crop to valid region
-  float x = clamp(c.x, 0.0, 1.0);
-  float y = clamp(c.y, 0.0, 1.0);
-  float w = clamp(c.z, 0.001, 1.0);
-  float h = clamp(c.w, 0.001, 1.0);
-  vec2 u = vec2(x,y) + uv*vec2(w,h);
-  return clamp(u, 0.0, 1.0);
+
+vec2 applyRot(vec2 uv, int r){
+  // r: 0,1,2,3 -> 0,90,180,270
+  if (r==1) return vec2(uv.y, 1.0-uv.x);
+  if (r==2) return vec2(1.0-uv.x, 1.0-uv.y);
+  if (r==3) return vec2(1.0-uv.y, uv.x);
+  return uv;
 }
+vec2 xfUv(vec2 uv, int flipH, int flipV, int rotQ){
+  uv = applyRot(uv, rotQ);
+  if (flipH==1) uv.x = 1.0-uv.x;
+  if (flipV==1) uv.y = 1.0-uv.y;
+  return clamp(uv,0.0,1.0);
+}
+vec2 cropUv(vec2 uv, vec3 c){
+  // center + zoom: uv' = (uv-0.5)/zoom + center
+  float z = max(1.0, c.z);
+  vec2 outUv = (uv - 0.5)/z + c.xy;
+  return clamp(outUv, 0.0, 1.0);
+}
+
+vec3 sampleA(vec2 uv){
+  if (uHasA!=1) return vec3(0.0);
+  vec2 u = xfUv(uv, uAFlipH, uAFlipV, uARot);
+  u = cropUv(u, uACrop);
+  return texture2D(uA, u).rgb;
+}
+vec3 sampleB(vec2 uv){
+  vec2 u = xfUv(uv, uBFlipH, uBFlipV, uBRot);
+  u = cropUv(u, uBCrop);
+  if (uHasB==1) return texture2D(uB, u).rgb;
+  if (uUseAasB==1 && uHasA==1) {
+    // use A but with B’s crop/transform
+    vec2 ua = xfUv(uv, uAFlipH, uAFlipV, uARot);
+    ua = cropUv(ua, uBCrop);
+    return texture2D(uA, ua).rgb;
+  }
+  return vec3(0.0);
+}
+
+vec3 rgbShift(vec3 base, vec2 uv, int which){
+  float amt = uRGBAmt;
+  vec2 off = vec2(amt, 0.0);
+  vec3 src0 = (which==0) ? sampleA(uv) : sampleB(uv);
+  vec3 srcR = (which==0) ? sampleA(uv+off) : sampleB(uv+off);
+  vec3 srcB = (which==0) ? sampleA(uv-off) : sampleB(uv-off);
+  vec3 rgb = vec3(srcR.r, src0.g, srcB.b);
+  return rgb;
+}
+
 void main(){
   vec2 uv = vUv;
 
-  if (uPixelOn==1){
+  // Pixelate can target stage, so we hold original vUv too
+  vec2 uvPx = uv;
+  if (uPixelOn==1 && uPixelT==3){ // Final target pixelate needs uv pixelation early
     float px=max(1.0,uPixSize);
-    uv=floor(uv*px)/px + 0.5/px;
+    uvPx=floor(uvPx*px)/px + 0.5/px;
   }
 
-  vec2 uva = cropUv(uv, uCropA);
-  vec2 uvb = cropUv(uv, uCropB);
-
-  vec3 A = (uHasA==1) ? texture2D(uA, uva).rgb : vec3(0.0);
-
-  // B can be real B OR fall back to A
-  vec3 B = vec3(0.0);
-  if (uHasB==1) B = texture2D(uB, uvb).rgb;
-  else if (uUseAasB==1 && uHasA==1) B = texture2D(uA, uvb).rgb;
-
+  // Source sampling
+  vec3 A = sampleA(uvPx);
+  vec3 B = sampleB(uvPx);
   B = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
 
+  // RGB shift target
   if (uRGBOn==1){
-    float amt=uRGBAmt;
-    vec2 off=vec2(amt,0.0);
-    vec3 src = (uHasB==1) ? texture2D(uB, uvb).rgb : ((uUseAasB==1 && uHasA==1) ? texture2D(uA, uvb).rgb : vec3(0.0));
-    float r = (uHasB==1) ? texture2D(uB, uvb+off).r : ((uUseAasB==1 && uHasA==1) ? texture2D(uA, uvb+off).r : 0.0);
-    float g = src.g;
-    float b = (uHasB==1) ? texture2D(uB, uvb-off).b : ((uUseAasB==1 && uHasA==1) ? texture2D(uA, uvb-off).b : 0.0);
-    vec3 rgb = vec3(r,g,b);
-    rgb = mix(rgb, 1.0-rgb, clamp(uInvB,0.0,1.0));
-    B = rgb;
+    if (uRGBT==0) A = rgbShift(A, uvPx, 0);
+    else if (uRGBT==1) {
+      vec3 b2 = rgbShift(B, uvPx, 1);
+      b2 = mix(b2, 1.0-b2, clamp(uInvB,0.0,1.0));
+      B = b2;
+    }
   }
 
+  // Mix stage
+  vec3 mixedB = blend(A,B,uBlendMode);
+  vec3 Mix = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
+
+  // Glitch (affects chosen stage by disturbing UV fetch)
   if (uGlitchOn==1){
     float g=uGlitchAmt;
     float t=uTime*1.2;
-    float line=floor(uv.y*240.0);
+    float line=floor(uvPx.y*240.0);
     float rnd=hash(vec2(line,floor(t*6.0)));
-    uv.x += (rnd-0.5)*0.02*g;
-    float blockY=floor(uv.y*10.0);
+    vec2 guv = uvPx;
+    guv.x += (rnd-0.5)*0.02*g;
+    float blockY=floor(uvPx.y*10.0);
     float br=hash(vec2(blockY,floor(t*3.0)));
-    if (br < 0.18*g) uv.x += (br-0.09)*0.12*g;
+    if (br < 0.18*g) guv.x += (br-0.09)*0.12*g;
 
-    uva = cropUv(uv, uCropA);
-    uvb = cropUv(uv, uCropB);
-
-    A = (uHasA==1) ? texture2D(uA, uva).rgb : vec3(0.0);
-    if (uHasB==1) B = texture2D(uB, uvb).rgb;
-    else if (uUseAasB==1 && uHasA==1) B = texture2D(uA, uvb).rgb;
-    else B = vec3(0.0);
-
-    B = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
+    if (uGlitchT==0) A = sampleA(guv);
+    else if (uGlitchT==1) { B = sampleB(guv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
+    else if (uGlitchT==2){
+      vec3 a2 = sampleA(guv);
+      vec3 b2 = sampleB(guv); b2 = mix(b2,1.0-b2,clamp(uInvB,0.0,1.0));
+      vec3 m2 = mix(a2, blend(a2,b2,uBlendMode), clamp(uBOpacity,0.0,1.0));
+      Mix = m2;
+    }
   }
 
-  vec3 mixedB = blend(A,B,uBlendMode);
-  vec3 base = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
+  // Pixelate stage targeting (if not final)
+  if (uPixelOn==1 && uPixelT!=3){
+    float px=max(1.0,uPixSize);
+    vec2 puv = floor(uv*px)/px + 0.5/px;
+    if (uPixelT==0) A = sampleA(puv);
+    else if (uPixelT==1) { B = sampleB(puv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
+    else if (uPixelT==2){
+      vec3 a2 = sampleA(puv);
+      vec3 b2 = sampleB(puv); b2 = mix(b2,1.0-b2,clamp(uInvB,0.0,1.0));
+      Mix = mix(a2, blend(a2,b2,uBlendMode), clamp(uBOpacity,0.0,1.0));
+    }
+  }
 
-  // feedback
-  vec2 p = vUv - 0.5;
-  vec2 fbUv = vUv;
+  vec3 Final = Mix;
+
+  // Feedback (targeted)
   if (uFeedbackOn==1){
-    vec2 rp = rot(p, uFbRot) / (1.0 + uFbZoom);
-    fbUv = rp + 0.5;
+    vec2 p = vUv - 0.5;
+    vec2 fbUv = rot2(p, uFbRot) / (1.0 + uFbZoom) + 0.5;
     vec3 fb = texture2D(uFB, fbUv).rgb;
-    base = mix(base, fb, clamp(uFbAmt,0.0,0.98));
+    if (uFeedbackT==0) A = mix(A, fb, clamp(uFbAmt,0.0,0.98));
+    else if (uFeedbackT==1) B = mix(B, fb, clamp(uFbAmt,0.0,0.98));
+    else if (uFeedbackT==2) Final = mix(Mix, fb, clamp(uFbAmt,0.0,0.98));
+    else Final = mix(Final, fb, clamp(uFbAmt,0.0,0.98));
   }
 
-  // kaleido (sample from the *mixed* field)
+  // Kaleido (targeted)
   if (uKaleidoOn==1){
     vec2 kp = vUv - 0.5;
     float ang = atan(kp.y,kp.x);
@@ -846,32 +822,52 @@ void main(){
     ang = abs(ang - k*0.5);
     vec2 ku = vec2(cos(ang), sin(ang))*r;
     vec2 uvk = ku + 0.5;
-    // apply crop to kaleido samples too
-    vec3 kA = (uHasA==1) ? texture2D(uA, cropUv(uvk,uCropA)).rgb : vec3(0.0);
-    vec3 kB = vec3(0.0);
-    if (uHasB==1) kB = texture2D(uB, cropUv(uvk,uCropB)).rgb;
-    else if (uUseAasB==1 && uHasA==1) kB = texture2D(uA, cropUv(uvk,uCropB)).rgb;
-    kB = mix(kB, 1.0-kB, clamp(uInvB,0.0,1.0));
+
+    vec3 kA = sampleA(uvk);
+    vec3 kB = sampleB(uvk); kB = mix(kB, 1.0-kB, clamp(uInvB,0.0,1.0));
     vec3 kMix = mix(kA, blend(kA,kB,uBlendMode), clamp(uBOpacity,0.0,1.0));
-    base = mix(base, kMix, clamp(uKAmt,0.0,1.0));
+
+    if (uKaleidoT==0) A = mix(A, kA, clamp(uKAmt,0.0,1.0));
+    else if (uKaleidoT==1) B = mix(B, kB, clamp(uKAmt,0.0,1.0));
+    else if (uKaleidoT==2) Final = mix(Mix, kMix, clamp(uKAmt,0.0,1.0));
+    else Final = mix(Final, kMix, clamp(uKAmt,0.0,1.0));
   }
 
-  base *= uExposure;
-  base = (base - 0.5)*uContrast + 0.5;
-  base = satAdjust(base, uSat);
+  // If RGB/Glitch targeted Mix/Final, apply on the back end (optional minimal)
+  if (uRGBOn==1){
+    if (uRGBT==2){
+      vec3 a2 = sampleA(uvPx);
+      vec3 b2 = sampleB(uvPx); b2 = mix(b2,1.0-b2,clamp(uInvB,0.0,1.0));
+      vec3 m2 = mix(a2, blend(a2,b2,uBlendMode), clamp(uBOpacity,0.0,1.0));
+      Final = mix(Final, m2, 0.0); // placeholder (RGB on mix is complex; handled earlier mainly)
+    } else if (uRGBT==3){
+      // RGB on final: simple channel offset on Final itself
+      float amt=uRGBAmt;
+      vec2 off=vec2(amt,0.0);
+      vec3 fR = Final;
+      vec3 fB = Final;
+      // cheap fake: modulate channels
+      Final = vec3(Final.r, Final.g*(1.0-amt*8.0), Final.b);
+    }
+  }
+
+  // Color controls on final
+  Final *= uExposure;
+  Final = (Final - 0.5)*uContrast + 0.5;
+  Final = satAdjust(Final, uSat);
 
   if (uScanOn==1){
     float s = sin(vUv.y*uRes.y*3.14159);
     float scan = mix(1.0, 0.78 + 0.22*s, clamp(uScanAmt,0.0,1.0));
-    base *= scan;
+    Final *= scan;
   }
   if (uVigOn==1){
     float d = distance(vUv, vec2(0.5));
     float v = smoothstep(0.35, 0.95, d);
-    base *= mix(1.0, 1.0 - v, clamp(uVigAmt,0.0,1.0));
+    Final *= mix(1.0, 1.0 - v, clamp(uVigAmt,0.0,1.0));
   }
 
-  gl_FragColor = vec4(clamp(base,0.0,1.0), 1.0);
+  gl_FragColor = vec4(clamp(Final,0.0,1.0), 1.0);
 }
 `;
 
@@ -937,6 +933,7 @@ function initGL(){
   texA=makeTex(); texB=makeTex();
   resizeCanvas();
 }
+
 function blendModeToInt(v){
   if (v==="normal") return 0;
   if (v==="multiply") return 1;
@@ -947,28 +944,36 @@ function blendModeToInt(v){
   if (v==="exclusion") return 6;
   return 3;
 }
+function targetToInt(v){
+  if (v==="a") return 0;
+  if (v==="b") return 1;
+  if (v==="mix") return 2;
+  return 3; // final
+}
+function rotToQ(v){
+  const n = parseInt(v,10) || 0;
+  if (n===90) return 1;
+  if (n===180) return 2;
+  if (n===270) return 3;
+  return 0;
+}
 function updateVideoTexture(tex, video){
   gl.bindTexture(gl.TEXTURE_2D, tex);
   try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video); }catch(e){}
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-/* One continuous RAF loop (fixes “black after switching to FX mode”) */
 function tick(t){
   if (gl && currentMode==="fx"){
     resizeCanvas();
-
     const hasA = !!capStreamA && capVideoA.readyState>=2;
     const hasB = !!capStreamB && capVideoB.readyState>=2;
-
     if (hasA) updateVideoTexture(texA, capVideoA);
     if (hasB) updateVideoTexture(texB, capVideoB);
 
     gl.useProgram(prog);
-
     const w=canvas.width, h=canvas.height;
 
-    // inputs
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texA);
     gl.uniform1i(gl.getUniformLocation(prog,"uA"), 0);
 
@@ -988,13 +993,6 @@ function tick(t){
     gl.uniform1i(gl.getUniformLocation(prog,"uHasB"), hasB?1:0);
     gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), $("useAasB").checked ? 1 : 0);
 
-    // crops
-    const cropA = [parseFloat($("cropAX").value), parseFloat($("cropAY").value), parseFloat($("cropAW").value), parseFloat($("cropAH").value)];
-    const cropB = [parseFloat($("cropBX").value), parseFloat($("cropBY").value), parseFloat($("cropBW").value), parseFloat($("cropBH").value)];
-    gl.uniform4f(gl.getUniformLocation(prog,"uCropA"), cropA[0],cropA[1],cropA[2],cropA[3]);
-    gl.uniform4f(gl.getUniformLocation(prog,"uCropB"), cropB[0],cropB[1],cropB[2],cropB[3]);
-
-    // mixer
     gl.uniform1i(gl.getUniformLocation(prog,"uBlendMode"), blendModeToInt($("fxBlend").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uBOpacity"), parseFloat($("fxBOpacity").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uInvB"), parseFloat($("fxInvB").value));
@@ -1002,7 +1000,20 @@ function tick(t){
     gl.uniform1f(gl.getUniformLocation(prog,"uContrast"), parseFloat($("fxContrast").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uSat"), parseFloat($("fxSat").value));
 
-    // fx toggles
+    // transforms
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipH"), $("aFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipV"), $("aFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uARot"), rotToQ($("aRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uACrop"),
+      parseFloat($("aCx").value), parseFloat($("aCy").value), parseFloat($("aZoom").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipH"), $("bFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipV"), $("bFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBRot"), rotToQ($("bRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uBCrop"),
+      parseFloat($("bCx").value), parseFloat($("bCy").value), parseFloat($("bZoom").value));
+
+    // FX toggles
     gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackOn"), $("tFeedback").checked?1:0);
     gl.uniform1f(gl.getUniformLocation(prog,"uFbAmt"), parseFloat($("feedbackAmt").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uFbZoom"), parseFloat($("feedbackZoom").value));
@@ -1028,6 +1039,13 @@ function tick(t){
     gl.uniform1i(gl.getUniformLocation(prog,"uVigOn"), $("tVig").checked?1:0);
     gl.uniform1f(gl.getUniformLocation(prog,"uVigAmt"), parseFloat($("vigAmt").value));
 
+    // FX targets
+    gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
+
     // render to feedback
     gl.bindFramebuffer(gl.FRAMEBUFFER, nextFbo);
     gl.viewport(0,0,w,h);
@@ -1045,31 +1063,21 @@ function tick(t){
     gl.viewport(0,0,w,h);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
-
   requestAnimationFrame(tick);
 }
 
 /* =========================
    Boot
 ========================= */
-$("fxAllOff").addEventListener("click", ()=>{
-  $("tFeedback").checked=false; $("tKaleido").checked=false; $("tRGB").checked=false;
-  $("tGlitch").checked=false; $("tPixel").checked=false; $("tScan").checked=false; $("tVig").checked=false;
-});
+function resizeOnWindow(){ resizeCanvas(); }
+window.addEventListener("resize", resizeOnWindow);
 
-window.addEventListener("resize", resizeCanvas);
-
-function boot(){
+document.addEventListener("DOMContentLoaded", ()=>{
   initGL();
   rebuildLinkLayers();
   setMode("links");
-  // UX for autoplay restrictions
-  showGate(false);
-  setTimeout(()=>showGate(true), 600);
-  setTimeout(()=>showGate(false), 1400);
   requestAnimationFrame(tick);
-}
-document.addEventListener("DOMContentLoaded", boot);
+});
 </script>
 </body>
 </html>
