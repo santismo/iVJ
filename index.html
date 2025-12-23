@@ -44,7 +44,7 @@
     .layersRoot{position:absolute; inset:0; z-index:10;}
     .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter; mix-blend-mode:normal; opacity:1;}
 
-    /* Link mode transform wrapper (zoom/pan crop) */
+    /* Link Mixer crop/zoom transform wrappers */
     .xformOuter{position:absolute; inset:0; overflow:hidden;}
     .xformInner{
       position:absolute; left:50%; top:50%;
@@ -53,15 +53,14 @@
       transform-origin:center center;
       will-change:transform;
     }
-    .layer iframe{width:100%;height:100%;border:0;display:block;}
 
+    .layer iframe{width:100%;height:100%;border:0;display:block;}
     canvas#fxOut{position:absolute; inset:0; width:100%; height:100%; display:none; z-index:30;}
 
     /* FX loading overlay */
     .fxOverlay{
       position:absolute; inset:0; z-index:40;
-      display:none;
-      align-items:center; justify-content:center;
+      display:none; align-items:center; justify-content:center;
       background:radial-gradient(1200px 700px at 50% 50%, rgba(122,162,255,.12), rgba(0,0,0,.85));
       backdrop-filter: blur(6px);
       border-radius:var(--radius);
@@ -98,7 +97,7 @@
     .cardTitle{font-weight:700;font-size:13px}
     .cardBody{padding:12px;display:grid;gap:10px}
     label{display:grid;gap:6px;font-size:12px;color:var(--muted);}
-    input[type="text"], select{width:100%; padding:10px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,.30); color:var(--text); font-size:14px; outline:none;}
+    input[type="text"], select, input[type="number"]{width:100%; padding:10px; border-radius:12px; border:1px solid var(--border); background:rgba(0,0,0,.30); color:var(--text); font-size:14px; outline:none;}
     input[type="range"]{width:100%;}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width: 740px){.row{grid-template-columns:1fr;}}
@@ -121,7 +120,7 @@
     <div class="title">
       <h1>VJ Mixer</h1>
       <div class="sub">
-        <b>Link Mixer</b> = multiple YouTube embeds (blend + zoom/pan crop). <b>FX Capture</b> = capture tab/window pixels → real FX.
+        <b>Link Mixer</b> = multiple YouTube links/playlists (blend + zoom/pan crop). <b>FX Capture</b> = capture tab/window pixels → real FX.
       </div>
     </div>
     <div class="actions">
@@ -143,7 +142,7 @@
         <div style="font-weight:700">FX Capture is waiting for sources…</div>
         <div class="small">
           Click <b>Capture A</b> (and optionally <b>Capture B</b>).<br/>
-          Tip: pick a <b>Chrome Tab</b> and choose a YouTube tab in theater/fullscreen.
+          Tip: choose a <b>Chrome Tab</b> and put YouTube in theater/fullscreen.
         </div>
       </div>
     </div>
@@ -172,7 +171,6 @@
               </div>
             </div>
             <div class="cardBody">
-
               <div class="row">
                 <label>Tap-through YouTube UI
                   <select id="tapUI">
@@ -184,40 +182,22 @@
                 <label class="toggle" style="align-items:flex-start">
                   <div style="display:flex;gap:8px;align-items:center">
                     <input id="useNoCookie" type="checkbox">
-                    <span>Use youtube-nocookie (privacy mode)</span>
+                    <span>Use youtube-nocookie domain</span>
                   </div>
-                  <span class="small" style="margin-left:26px">If YouTube acts “bot-ish”, turn this OFF and Reload.</span>
+                  <span class="small" style="margin-left:26px">If YouTube acts “bot-ish”, try turning this OFF then Reload.</span>
                 </label>
               </div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">Playlist / Random Loader</div></div>
+                <div class="cardHead"><div class="cardTitle">Playlist presets + true random</div></div>
                 <div class="cardBody">
                   <div class="row">
                     <label>Preset
                       <select id="presetList">
                         <option value="" selected>off</option>
-                        <option value="trippy">Trippy visuals (your default)</option>
-                        <option value="commercials">Old commercials (your default)</option>
-                        <option value="cartoons">Old cartoons (your default)</option>
-                        <option value="custom">Custom (paste playlist link below)</option>
-                      </select>
-                    </label>
-                    <label class="toggle" style="align-items:center;margin-top:22px">
-                      <input id="shufflePlaylists" type="checkbox" checked>
-                      Shuffle playlists (true random order)
-                    </label>
-                  </div>
-
-                  <label>Playlist URL or ID (only used for Custom)
-                    <input id="playlistInput" type="text" placeholder="Paste playlist URL or playlist ID (PL...)" />
-                  </label>
-
-                  <div class="row">
-                    <label>Randomize start index (fallback)
-                      <select id="randStart">
-                        <option value="on" selected>on</option>
-                        <option value="off">off</option>
+                        <option value="trippy">Trippy visuals</option>
+                        <option value="cartoons">Cartoons</option>
+                        <option value="commercials">Old commercials</option>
                       </select>
                     </label>
                     <label>Max random index (rough)
@@ -226,14 +206,24 @@
                     </label>
                   </div>
 
+                  <div class="row">
+                    <label class="toggle" style="align-items:center;margin-top:22px">
+                      <input id="shufflePlaylists" type="checkbox" checked>
+                      Shuffle playlists (best random)
+                    </label>
+                    <label class="toggle" style="align-items:center;margin-top:22px">
+                      <input id="randStart" type="checkbox" checked>
+                      Also randomize start index
+                    </label>
+                  </div>
+
                   <div class="miniBtns">
-                    <button id="applyPlaylistAll" class="primary">Load into ALL layers</button>
-                    <button id="applyPlaylistRand" class="primary">Load into RANDOM layers</button>
+                    <button id="applyPlaylistAll" class="primary">Load preset into ALL layers</button>
+                    <button id="applyPlaylistRand" class="primary">Load preset into RANDOM layers</button>
                   </div>
 
                   <div class="small">
-                    Shuffle uses the YouTube IFrame API (<b>real shuffle</b>). :contentReference[oaicite:1]{index=1}
-                    If the API is blocked, it falls back to “random start index”.
+                    Random fix: after enabling shuffle we also force a random jump per layer, so they don’t all start on the first video.
                   </div>
                 </div>
               </div>
@@ -243,7 +233,7 @@
           </div>
 
           <div class="card">
-            <div class="cardHead"><div class="cardTitle">Why no WebGL FX here?</div></div>
+            <div class="cardHead"><div class="cardTitle">Why no FX here?</div></div>
             <div class="cardBody">
               <div class="small">
                 YouTube iframes are cross-origin: browsers block pixel access, so real WebGL FX can’t run on them.
@@ -275,7 +265,7 @@
               </div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">A Transform (default zoom 1.75)</div></div>
+                <div class="cardHead"><div class="cardTitle">A Transform</div></div>
                 <div class="cardBody">
                   <div class="row">
                     <label class="toggle"><input id="aFlipV" type="checkbox" checked> Flip Vertical (default ON)</label>
@@ -290,24 +280,15 @@
                     </select>
                   </label>
                   <div class="row">
-                    <label>Center X
-                      <input id="aCx" type="range" min="0" max="1" step="0.001" value="0.5">
-                      <div class="val">value: <span data-val-for="aCx"></span></div>
-                    </label>
-                    <label>Center Y
-                      <input id="aCy" type="range" min="0" max="1" step="0.001" value="0.5">
-                      <div class="val">value: <span data-val-for="aCy"></span></div>
-                    </label>
+                    <label>Center X <input id="aCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label>Center Y <input id="aCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
                   </div>
-                  <label>Zoom
-                    <input id="aZoom" type="range" min="1" max="6" step="0.01" value="1.75">
-                    <div class="val">value: <span data-val-for="aZoom"></span></div>
-                  </label>
+                  <label>Zoom <input id="aZoom" type="range" min="1" max="6" step="0.01" value="1.75"></label>
                 </div>
               </div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">B Transform (default zoom 1.75)</div></div>
+                <div class="cardHead"><div class="cardTitle">B Transform</div></div>
                 <div class="cardBody">
                   <div class="row">
                     <label class="toggle"><input id="bFlipV" type="checkbox" checked> Flip Vertical (default ON)</label>
@@ -322,26 +303,14 @@
                     </select>
                   </label>
                   <div class="row">
-                    <label>Center X
-                      <input id="bCx" type="range" min="0" max="1" step="0.001" value="0.5">
-                      <div class="val">value: <span data-val-for="bCx"></span></div>
-                    </label>
-                    <label>Center Y
-                      <input id="bCy" type="range" min="0" max="1" step="0.001" value="0.5">
-                      <div class="val">value: <span data-val-for="bCy"></span></div>
-                    </label>
+                    <label>Center X <input id="bCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label>Center Y <input id="bCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
                   </div>
-                  <label>Zoom
-                    <input id="bZoom" type="range" min="1" max="6" step="0.01" value="1.75">
-                    <div class="val">value: <span data-val-for="bZoom"></span></div>
-                  </label>
+                  <label>Zoom <input id="bZoom" type="range" min="1" max="6" step="0.01" value="1.75"></label>
 
                   <div class="row">
                     <label class="toggle"><input id="useAasB" type="checkbox"> If B missing, use A as B</label>
-                    <label>Invert B
-                      <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1">
-                      <div class="val">value: <span data-val-for="fxInvB"></span></div>
-                    </label>
+                    <label>Invert B <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1"></label>
                   </div>
                 </div>
               </div>
@@ -358,26 +327,14 @@
                     <option value="normal">normal</option>
                   </select>
                 </label>
-                <label>B Opacity
-                  <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85">
-                  <div class="val">value: <span data-val-for="fxBOpacity"></span></div>
-                </label>
+                <label>B Opacity <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85"></label>
               </div>
 
               <div class="row">
-                <label>Exposure
-                  <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05">
-                  <div class="val">value: <span data-val-for="fxExposure"></span></div>
-                </label>
-                <label>Contrast
-                  <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35">
-                  <div class="val">value: <span data-val-for="fxContrast"></span></div>
-                </label>
+                <label>Exposure <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05"></label>
+                <label>Contrast <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35"></label>
               </div>
-              <label>Saturation
-                <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25">
-                <div class="val">value: <span data-val-for="fxSat"></span></div>
-              </label>
+              <label>Saturation <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25"></label>
             </div>
           </div>
 
@@ -399,19 +356,10 @@
                 </label>
               </div>
               <div class="row">
-                <label>Amount
-                  <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88">
-                  <div class="val">value: <span data-val-for="feedbackAmt"></span></div>
-                </label>
-                <label>Zoom
-                  <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06">
-                  <div class="val">value: <span data-val-for="feedbackZoom"></span></div>
-                </label>
+                <label>Amount <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88"></label>
+                <label>Zoom <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06"></label>
               </div>
-              <label>Rotate
-                <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12">
-                <div class="val">value: <span data-val-for="feedbackRot"></span></div>
-              </label>
+              <label>Rotate <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tKaleido" type="checkbox"> Kaleido / Mirror</label>
@@ -425,19 +373,10 @@
                 </label>
               </div>
               <div class="row">
-                <label>Segments
-                  <input id="kSeg" type="range" min="2" max="16" step="1" value="6">
-                  <div class="val">value: <span data-val-for="kSeg"></span></div>
-                </label>
-                <label>Amount
-                  <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85">
-                  <div class="val">value: <span data-val-for="kAmt"></span></div>
-                </label>
+                <label>Segments <input id="kSeg" type="range" min="2" max="16" step="1" value="6"></label>
+                <label>Amount <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85"></label>
               </div>
-              <label>Spin
-                <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0.35">
-                <div class="val">value: <span data-val-for="kSpin"></span></div>
-              </label>
+              <label>Spin <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0.35"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tRGB" type="checkbox"> RGB Shift</label>
@@ -450,10 +389,7 @@
                   </select>
                 </label>
               </div>
-              <label>Amount
-                <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012">
-                <div class="val">value: <span data-val-for="rgbAmt"></span></div>
-              </label>
+              <label>Amount <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tGlitch" type="checkbox"> Glitch</label>
@@ -466,10 +402,7 @@
                   </select>
                 </label>
               </div>
-              <label>Amount
-                <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35">
-                <div class="val">value: <span data-val-for="glitchAmt"></span></div>
-              </label>
+              <label>Amount <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tPixel" type="checkbox"> Pixelate</label>
@@ -482,24 +415,15 @@
                   </select>
                 </label>
               </div>
-              <label>Size
-                <input id="pixSize" type="range" min="1" max="220" step="1" value="70">
-                <div class="val">value: <span data-val-for="pixSize"></span></div>
-              </label>
+              <label>Size <input id="pixSize" type="range" min="1" max="220" step="1" value="70"></label>
 
               <div class="row">
                 <label class="toggle"><input id="tScan" type="checkbox"> Scanlines</label>
                 <label class="toggle"><input id="tVig" type="checkbox"> Vignette</label>
               </div>
               <div class="row">
-                <label>Scan amount
-                  <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35">
-                  <div class="val">value: <span data-val-for="scanAmt"></span></div>
-                </label>
-                <label>Vignette amount
-                  <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55">
-                  <div class="val">value: <span data-val-for="vigAmt"></span></div>
-                </label>
+                <label>Scan amount <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35"></label>
+                <label>Vignette amount <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55"></label>
               </div>
 
               <div class="small">
@@ -513,7 +437,7 @@
   </div>
 </div>
 
-<!-- YouTube IFrame API (needed for true shuffle playlists) -->
+<!-- YouTube IFrame API (needed for playlist shuffle + per-layer random jumping) -->
 <script src="https://www.youtube.com/iframe_api"></script>
 
 <script>
@@ -548,7 +472,7 @@ controls.classList.remove("open");
 $("btnToggleControls").textContent = "Show Controls";
 
 /* =========================
-   Slider numeric readouts
+   Small value readout (randMax only)
 ========================= */
 function bindValue(id, fmt=(v)=>String(v)){
   const el = $(id);
@@ -561,24 +485,21 @@ function bindValue(id, fmt=(v)=>String(v)){
   el.addEventListener("input", update);
   update();
 }
-function bindAllValues(){
-  const ids = [
-    "randMax","aCx","aCy","aZoom","bCx","bCy","bZoom","fxInvB","fxBOpacity","fxExposure","fxContrast","fxSat",
-    "feedbackAmt","feedbackZoom","feedbackRot","kSeg","kAmt","kSpin","rgbAmt","glitchAmt","pixSize","scanAmt","vigAmt"
-  ];
-  ids.forEach(id=>{
-    if (id==="kSeg" || id==="pixSize" || id==="randMax") bindValue(id, v=>String(Math.round(v)));
-    else bindValue(id, v=>v.toFixed(3).replace(/0+$/,'').replace(/\.$/,''));
-  });
-}
+bindValue("randMax", v=>String(Math.round(v)));
 
 /* =========================
-   MODE 1: Link Mixer (YouTube embeds + shuffle playlists)
+   MODE 1: Link Mixer (videos + playlists with REAL random)
 ========================= */
 const DEFAULT_LINKS = [
   "https://www.youtube.com/watch?v=3pxrECZYEAA",
   "https://www.youtube.com/watch?v=dS-MaUk6YBI"
 ];
+
+const PRESET_PLAYLISTS = {
+  trippy: "PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2",
+  cartoons: "PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3",
+  commercials: "PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu"
+};
 
 const BLENDS = [
   "normal","multiply","screen","overlay","darken","lighten","color-dodge","color-burn",
@@ -586,7 +507,7 @@ const BLENDS = [
 ];
 
 let linkLayerCount = 2;
-// layer: {el, outer, inner, url, ui, yt:{kind, id, playerId, player?}}
+// layer: {el, outer, inner, url, ui, yt:{playerId, player}, ytStartIndex, auto:{on, sec, timer}}
 const linkLayers = [];
 
 function extractVideoId(url){
@@ -604,7 +525,7 @@ function extractVideoId(url){
 function extractPlaylistId(input){
   if (!input) return null;
   const raw = input.trim();
-  if (/^[A-Za-z0-9_-]{10,}$/.test(raw) && raw.startsWith("PL")) return raw;
+  if (raw.startsWith("PL") && /^[A-Za-z0-9_-]{10,}$/.test(raw)) return raw;
   try{
     const u = new URL(raw);
     const list = u.searchParams.get("list");
@@ -612,28 +533,22 @@ function extractPlaylistId(input){
   }catch(e){}
   return null;
 }
-
 function buildEmbedSrcFromVideoId(videoId){
   const useNoCookie = $("useNoCookie").checked;
   const base = useNoCookie ? "https://www.youtube-nocookie.com/embed/" : "https://www.youtube.com/embed/";
+  // loop single video: use playlist=videoId
   return `${base}${videoId}?playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&loop=1&playlist=${encodeURIComponent(videoId)}`;
 }
-
-/* fallback playlist embed (non-API): random start index only */
-function buildEmbedSrcFromPlaylistIdFallback(listId){
+function buildEmbedSrcFromPlaylistIdFallback(listId, idx){
   const useNoCookie = $("useNoCookie").checked;
   const base = useNoCookie ? "https://www.youtube-nocookie.com/embed/videoseries" : "https://www.youtube.com/embed/videoseries";
-  const randOn = $("randStart").value === "on";
-  const max = Math.max(1, parseInt($("randMax").value,10) || 60);
-  const idx = randOn ? Math.floor(Math.random()*max) : 0;
-  return `${base}?list=${encodeURIComponent(listId)}&playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&loop=1&index=${idx}`;
+  const index = Math.max(0, idx|0);
+  return `${base}?list=${encodeURIComponent(listId)}&playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&loop=1&index=${index}`;
 }
-
 function fillBlendOptions(sel, def="difference"){
   sel.innerHTML = BLENDS.map(b=>`<option value="${b}">${b}</option>`).join("");
   sel.value = def;
 }
-
 function makeLinkLayer(i){
   const el = document.createElement("div");
   el.className = "layer";
@@ -641,21 +556,18 @@ function makeLinkLayer(i){
 
   const outer = document.createElement("div");
   outer.className = "xformOuter";
-
   const inner = document.createElement("div");
   inner.className = "xformInner";
 
   outer.appendChild(inner);
   el.appendChild(outer);
-  $("layersRoot").appendChild(el);
 
+  $("layersRoot").appendChild(el);
   return {el, outer, inner};
 }
-
 function applyLinkStyle(i){
   const L = linkLayers[i];
   if (!L) return;
-
   const tap = $("tapUI").value === "on";
   L.el.style.pointerEvents = tap ? "auto" : "none";
   L.el.style.opacity = L.ui.op;
@@ -668,34 +580,97 @@ function applyLinkStyle(i){
   L.inner.style.transform = `translate(-50%,-50%) translate(${tx*100}%, ${ty*100}%) scale(${z})`;
 }
 
-/* ---- YouTube IFrame API (true shuffle) ---- */
+/* ---- YT IFrame API playlist control (true random + per-layer auto random) ---- */
 let YT_READY = false;
-function onYouTubeIframeAPIReady(){
-  YT_READY = true;
-  // if any layers are playlists already, remount them with API
-  for (let i=0;i<linkLayers.length;i++){
-    const list = extractPlaylistId(linkLayers[i].url);
-    if (list) mountLinkSource(i);
+function onYouTubeIframeAPIReady(){ YT_READY = true; }
+
+function clearAutoTimer(i){
+  const L = linkLayers[i];
+  if (!L || !L.auto) return;
+  if (L.auto.timer){
+    clearInterval(L.auto.timer);
+    L.auto.timer = null;
   }
+}
+function scheduleAutoTimer(i){
+  const L = linkLayers[i];
+  if (!L || !L.auto) return;
+  clearAutoTimer(i);
+
+  if (!L.auto.on) return;
+
+  const sec = Math.max(5, Math.min(3600, parseInt(L.auto.sec,10) || 20));
+  L.auto.sec = sec;
+
+  L.auto.timer = setInterval(()=>{
+    randomJumpLayer(i, false);
+  }, sec*1000);
 }
 
 function destroyYT(i){
   const L = linkLayers[i];
-  if (!L || !L.yt || !L.yt.player) return;
-  try{ L.yt.player.destroy(); }catch(e){}
-  L.yt.player = null;
-  L.yt.kind = null;
-  L.yt.id = null;
+  if (!L) return;
+  clearAutoTimer(i);
+  if (L.yt && L.yt.player){
+    try{ L.yt.player.destroy(); }catch(e){}
+  }
+  if (L.yt){
+    L.yt.player = null;
+    L.yt.playerId = null;
+  }
+}
+
+function randomIndex(){
+  const max = Math.max(5, parseInt($("randMax").value,10) || 60);
+  return Math.floor(Math.random()*max);
+}
+
+function randomJumpLayer(i, userInitiated=true){
+  const L = linkLayers[i];
+  if (!L) return;
+
+  const listId = extractPlaylistId(L.url);
+  if (!listId){
+    if (userInitiated) $("status").textContent = `Status: Layer ${i+1} is not a playlist`;
+    return;
+  }
+
+  const idx = randomIndex();
+  L.ytStartIndex = idx;
+
+  const shuffleOn = $("shufflePlaylists").checked;
+  const randStartOn = $("randStart").checked;
+
+  // If API player exists, do a real jump
+  if (L.yt && L.yt.player && typeof L.yt.player.playVideoAt === "function"){
+    try{
+      if (shuffleOn && typeof L.yt.player.setShuffle === "function") L.yt.player.setShuffle(true);
+      // jump to random position (in shuffled order if shuffle is on)
+      L.yt.player.playVideoAt(idx);
+      L.yt.player.playVideo();
+      if (userInitiated) $("status").textContent = `Status: Layer ${i+1} jumped to random`;
+      return;
+    }catch(e){}
+  }
+
+  // Fallback: remount iframe with random index
+  if (randStartOn){
+    destroyYT(i);
+    const src = buildEmbedSrcFromPlaylistIdFallback(listId, idx);
+    L.inner.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
+    if (userInitiated) $("status").textContent = `Status: Layer ${i+1} reloaded random (fallback)`;
+  } else {
+    if (userInitiated) $("status").textContent = `Status: enable “randomize start index” for fallback jumps`;
+  }
 }
 
 function mountPlaylistWithAPI(i, listId){
   const L = linkLayers[i];
-
   destroyYT(i);
   L.inner.innerHTML = "";
 
   const playerId = `ytpl_${i}_${Math.random().toString(16).slice(2)}`;
-  L.yt = {kind:"playlist", id:listId, playerId, player:null};
+  L.yt = { playerId, player:null };
 
   const host = document.createElement("div");
   host.id = playerId;
@@ -703,11 +678,13 @@ function mountPlaylistWithAPI(i, listId){
   host.style.height="100%";
   L.inner.appendChild(host);
 
-  const max = Math.max(1, parseInt($("randMax").value,10) || 60);
-  const startIndex = ($("randStart").value==="on") ? Math.floor(Math.random()*max) : 0;
-  const doShuffle = $("shufflePlaylists").checked;
+  const shuffleOn = $("shufflePlaylists").checked;
+  const randStartOn = $("randStart").checked;
 
-  // Real shuffle is done via setShuffle(true) on the API player. :contentReference[oaicite:2]{index=2}
+  // ensure per-layer random seed (this is the “fix”)
+  if (!Number.isFinite(L.ytStartIndex) || L.ytStartIndex < 0) L.ytStartIndex = randomIndex();
+  const initial = randStartOn ? L.ytStartIndex : 0;
+
   L.yt.player = new YT.Player(playerId, {
     height: "100%",
     width: "100%",
@@ -722,21 +699,58 @@ function mountPlaylistWithAPI(i, listId){
     },
     events: {
       onReady: (ev)=>{
+        const p = ev.target;
         try{
-          // cue/load playlist and shuffle
-          ev.target.loadPlaylist({ listType:"playlist", list:listId, index:startIndex });
-          if (doShuffle) ev.target.setShuffle(true); // shuffles playlist order :contentReference[oaicite:3]{index=3}
-          ev.target.playVideo();
+          // 1) load playlist at an index
+          p.loadPlaylist({ listType:"playlist", list:listId, index: initial });
+
+          // 2) after a tiny settle, enable shuffle and force-random jump (this is the key)
+          setTimeout(()=>{
+            try{
+              if (shuffleOn && typeof p.setShuffle === "function") p.setShuffle(true);
+
+              // Force a random jump per layer so it doesn't stay on first item
+              const jump = randomIndex();
+              p.playVideoAt(jump);
+              p.playVideo();
+
+              // if it’s still stuck, bump next
+              setTimeout(()=>{
+                try{
+                  const st = p.getPlayerState();
+                  if (st !== YT.PlayerState.PLAYING) p.nextVideo();
+                }catch(e){}
+              }, 450);
+            }catch(e){}
+          }, 350);
+
         }catch(e){}
       },
       onStateChange: (ev)=>{
-        // keep it moving if it ever stops unexpectedly
         if (ev.data === YT.PlayerState.ENDED){
-          try{ ev.target.playVideo(); }catch(e){}
+          try{ ev.target.nextVideo(); }catch(e){}
         }
       }
     }
   });
+
+  // restore per-layer auto timer if enabled
+  scheduleAutoTimer(i);
+}
+
+function mountPlaylistFallback(i, listId){
+  const L = linkLayers[i];
+  destroyYT(i);
+
+  // random start index for fallback
+  const idx = $("randStart").checked ? randomIndex() : 0;
+  L.ytStartIndex = idx;
+
+  const src = buildEmbedSrcFromPlaylistIdFallback(listId, idx);
+  L.inner.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
+
+  // schedule fallback auto timer (will reload iframe each time)
+  scheduleAutoTimer(i);
 }
 
 function mountVideoEmbed(i, vid){
@@ -746,34 +760,24 @@ function mountVideoEmbed(i, vid){
   L.inner.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
 }
 
-function mountPlaylistFallback(i, listId){
-  const L = linkLayers[i];
-  destroyYT(i);
-  const src = buildEmbedSrcFromPlaylistIdFallback(listId);
-  L.inner.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
-}
-
 function mountLinkSource(i){
   const L = linkLayers[i];
   const listId = extractPlaylistId(L.url);
   const vid = extractVideoId(L.url);
 
   if (listId){
-    // If shuffle is requested and API is ready, use true shuffle.
-    if ($("shufflePlaylists").checked && YT_READY && window.YT && window.YT.Player){
+    // Use API for shuffle/jumping when available
+    if (YT_READY && window.YT && window.YT.Player){
       mountPlaylistWithAPI(i, listId);
     } else {
-      // fallback: random start only
       mountPlaylistFallback(i, listId);
     }
     return;
   }
-
   if (vid){
     mountVideoEmbed(i, vid);
     return;
   }
-
   destroyYT(i);
   L.inner.innerHTML="";
 }
@@ -783,81 +787,78 @@ function rebuildLinkUI(){
   list.innerHTML = "";
 
   for (let i=0;i<linkLayerCount;i++){
+    const L = linkLayers[i];
     const item = document.createElement("div");
     item.className="layerItem";
     item.innerHTML = `
       <div class="layerItemHead">
         <div class="name">Layer ${i+1}</div>
-        <div class="miniBtns"><button data-act="apply" data-i="${i}">Apply</button></div>
+        <div class="miniBtns">
+          <button data-act="apply" data-i="${i}">Apply</button>
+          <button data-act="randNow" data-i="${i}">Random Now</button>
+        </div>
       </div>
+
       <div class="layerItemBody">
         <label>YouTube URL / ID OR playlist URL (list=...)
-          <input type="text" data-f="url" data-i="${i}" placeholder="video URL / 11-char ID / playlist URL"/>
+          <input type="text" data-f="url" data-i="${i}"/>
         </label>
 
         <div class="row">
-          <label>Opacity
-            <input type="range" min="0" max="1" step="0.01" data-f="op" data-i="${i}"/>
-          </label>
-          <label>Blend
-            <select data-f="blend" data-i="${i}"></select>
-          </label>
+          <label>Opacity <input type="range" min="0" max="1" step="0.01" data-f="op" data-i="${i}"/></label>
+          <label>Blend <select data-f="blend" data-i="${i}"></select></label>
         </div>
 
         <div class="row">
-          <label>Invert
-            <input type="range" min="0" max="1" step="0.01" data-f="inv" data-i="${i}"/>
-          </label>
-          <label>Contrast
-            <input type="range" min="0.5" max="3" step="0.01" data-f="ct" data-i="${i}"/>
-          </label>
+          <label>Invert <input type="range" min="0" max="1" step="0.01" data-f="inv" data-i="${i}"/></label>
+          <label>Contrast <input type="range" min="0.5" max="3" step="0.01" data-f="ct" data-i="${i}"/></label>
         </div>
 
         <div class="row">
-          <label>Saturation
-            <input type="range" min="0" max="3" step="0.01" data-f="sat" data-i="${i}"/>
-          </label>
-          <label>Hue rotate
-            <input type="range" min="-180" max="180" step="1" data-f="hue" data-i="${i}"/>
-          </label>
+          <label>Saturation <input type="range" min="0" max="3" step="0.01" data-f="sat" data-i="${i}"/></label>
+          <label>Hue rotate <input type="range" min="-180" max="180" step="1" data-f="hue" data-i="${i}"/></label>
         </div>
 
         <div class="card" style="background:rgba(255,255,255,.01)">
           <div class="cardHead"><div class="cardTitle">Crop / Zoom (Link Mixer)</div></div>
           <div class="cardBody">
-            <label>Zoom
-              <input type="range" min="1" max="4" step="0.01" data-f="zoom" data-i="${i}"/>
-            </label>
+            <label>Zoom <input type="range" min="1" max="4" step="0.01" data-f="zoom" data-i="${i}"/></label>
             <div class="row">
-              <label>Pan X
-                <input type="range" min="-0.5" max="0.5" step="0.001" data-f="panX" data-i="${i}"/>
+              <label>Pan X <input type="range" min="-0.5" max="0.5" step="0.001" data-f="panX" data-i="${i}"/></label>
+              <label>Pan Y <input type="range" min="-0.5" max="0.5" step="0.001" data-f="panY" data-i="${i}"/></label>
+            </div>
+            <div class="miniBtns"><button data-act="resetCrop" data-i="${i}">Reset Crop</button></div>
+          </div>
+        </div>
+
+        <div class="card" style="background:rgba(255,255,255,.01)">
+          <div class="cardHead"><div class="cardTitle">Auto Random (per layer)</div></div>
+          <div class="cardBody">
+            <div class="row">
+              <label class="toggle" style="margin-top:22px">
+                <input type="checkbox" data-f="autoOn" data-i="${i}" ${L.auto.on ? "checked":""}>
+                Auto-randomize
               </label>
-              <label>Pan Y
-                <input type="range" min="-0.5" max="0.5" step="0.001" data-f="panY" data-i="${i}"/>
+              <label>Timer (seconds)
+                <input type="number" min="5" max="3600" step="1" data-f="autoSec" data-i="${i}" value="${L.auto.sec}">
               </label>
             </div>
-            <div class="miniBtns">
-              <button data-act="resetCrop" data-i="${i}">Reset Crop</button>
+            <div class="small">
+              Works best on playlists (uses API jump when available; falls back to reloading with a random index).
             </div>
           </div>
         </div>
 
-        <div class="small">
-          For playlists: true shuffle requires the IFrame API and “Shuffle playlists” enabled. :contentReference[oaicite:4]{index=4}
-        </div>
       </div>
     `;
     list.appendChild(item);
 
-    const L = linkLayers[i];
     item.querySelector(`[data-f="url"][data-i="${i}"]`).value = L.url;
-
     item.querySelector(`[data-f="op"][data-i="${i}"]`).value = L.ui.op;
     item.querySelector(`[data-f="inv"][data-i="${i}"]`).value = L.ui.inv;
     item.querySelector(`[data-f="ct"][data-i="${i}"]`).value = L.ui.ct;
     item.querySelector(`[data-f="sat"][data-i="${i}"]`).value = L.ui.sat;
     item.querySelector(`[data-f="hue"][data-i="${i}"]`).value = L.ui.hue;
-
     item.querySelector(`[data-f="zoom"][data-i="${i}"]`).value = L.ui.zoom;
     item.querySelector(`[data-f="panX"][data-i="${i}"]`).value = L.ui.panX;
     item.querySelector(`[data-f="panY"][data-i="${i}"]`).value = L.ui.panY;
@@ -869,6 +870,8 @@ function rebuildLinkUI(){
 
 function rebuildLinkLayers(){
   $("layersRoot").innerHTML="";
+  // stop all timers/players cleanly
+  for (let i=0;i<linkLayers.length;i++) destroyYT(i);
   linkLayers.length=0;
 
   for (let i=0;i<linkLayerCount;i++){
@@ -889,22 +892,28 @@ function rebuildLinkLayers(){
         panX:0,
         panY:0
       },
-      yt: {kind:null,id:null,playerId:null,player:null}
+      yt: { playerId:null, player:null },
+      ytStartIndex: randomIndex(),
+      auto: { on:false, sec:20, timer:null }
     });
     mountLinkSource(i);
     applyLinkStyle(i);
   }
-
   rebuildLinkUI();
 }
 
 $("addLayer").addEventListener("click", ()=>{ if (linkLayerCount<5){ linkLayerCount++; rebuildLinkLayers(); }});
 $("removeLayer").addEventListener("click", ()=>{ if (linkLayerCount>2){ linkLayerCount--; rebuildLinkLayers(); }});
-$("reloadLinks").addEventListener("click", ()=>{ for (let i=0;i<linkLayerCount;i++){ mountLinkSource(i); applyLinkStyle(i);} });
-$("tapUI").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i); });
-$("useNoCookie").addEventListener("change", ()=>{ $("status").textContent="Status: privacy mode changed — hit Reload"; });
+$("reloadLinks").addEventListener("click", ()=>{
+  for (let i=0;i<linkLayerCount;i++){
+    mountLinkSource(i);
+    applyLinkStyle(i);
+  }
+  $("status").textContent="Status: reloaded";
+});
 
-$("shufflePlaylists").addEventListener("change", ()=>{ $("status").textContent="Status: shuffle setting changed — hit Reload"; });
+$("tapUI").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i); });
+$("useNoCookie").addEventListener("change", ()=>{ $("status").textContent="Status: domain changed — hit Reload"; });
 
 $("layerList").addEventListener("input", (e)=>{
   const t=e.target;
@@ -925,6 +934,15 @@ $("layerList").addEventListener("input", (e)=>{
   if (f==="panX") L.ui.panX=parseFloat(t.value);
   if (f==="panY") L.ui.panY=parseFloat(t.value);
 
+  if (f==="autoOn"){
+    L.auto.on = !!t.checked;
+    scheduleAutoTimer(i);
+  }
+  if (f==="autoSec"){
+    L.auto.sec = Math.max(5, Math.min(3600, parseInt(t.value,10) || 20));
+    scheduleAutoTimer(i);
+  }
+
   applyLinkStyle(i);
 });
 
@@ -933,64 +951,81 @@ $("layerList").addEventListener("click", (e)=>{
   if (!btn) return;
   const act = btn.getAttribute("data-act");
   const i=parseInt(btn.getAttribute("data-i"),10);
+  const L=linkLayers[i]; if (!L) return;
 
   if (act==="apply"){
     mountLinkSource(i);
     applyLinkStyle(i);
+    scheduleAutoTimer(i);
+    $("status").textContent = `Status: applied layer ${i+1}`;
+  }
+  if (act==="randNow"){
+    randomJumpLayer(i, true);
   }
   if (act==="resetCrop"){
-    const L = linkLayers[i];
-    if (!L) return;
     L.ui.zoom=1; L.ui.panX=0; L.ui.panY=0;
     rebuildLinkUI();
     applyLinkStyle(i);
   }
 });
 
-/* Your default playlists */
-const PRESET_PLAYLISTS = {
-  trippy: "PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2",
-  cartoons: "PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3",
-  commercials: "PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu"
-};
+$("shufflePlaylists").addEventListener("change", ()=>{ $("status").textContent="Status: shuffle changed — Reload to apply"; });
+$("randStart").addEventListener("change", ()=>{ $("status").textContent="Status: random start changed — Reload to apply"; });
 
 function getSelectedPlaylistId(){
   const preset = $("presetList").value;
   if (!preset) return null;
-  if (preset==="custom") return extractPlaylistId($("playlistInput").value);
   return PRESET_PLAYLISTS[preset] || null;
 }
-
 function loadPlaylistIntoLayer(i, listId){
   const L = linkLayers[i];
   if (!L) return;
   L.url = `https://www.youtube.com/playlist?list=${listId}`;
+  L.ytStartIndex = randomIndex();
   mountLinkSource(i);
   applyLinkStyle(i);
+  scheduleAutoTimer(i);
 }
 
 $("applyPlaylistAll").addEventListener("click", ()=>{
   const listId = getSelectedPlaylistId();
   if (!listId){
-    $("status").textContent = "Status: select a preset or paste a playlist first";
+    $("status").textContent = "Status: select a preset first";
     return;
   }
-  for (let i=0;i<linkLayerCount;i++) loadPlaylistIntoLayer(i, listId);
+
+  // make distinct-ish indices per layer so they don’t match
+  const max = Math.max(5, parseInt($("randMax").value,10) || 60);
+  const indices = Array.from({length:max}, (_,k)=>k);
+  for (let j=indices.length-1;j>0;j--){
+    const r = Math.floor(Math.random()*(j+1));
+    [indices[j], indices[r]] = [indices[r], indices[j]];
+  }
+
+  for (let i=0;i<linkLayerCount;i++){
+    const L = linkLayers[i];
+    L.ytStartIndex = indices[i % indices.length];
+    L.url = `https://www.youtube.com/playlist?list=${listId}`;
+    mountLinkSource(i);
+    applyLinkStyle(i);
+    scheduleAutoTimer(i);
+  }
+
   rebuildLinkUI();
-  $("status").textContent = "Status: playlist loaded into all layers";
+  $("status").textContent = "Status: preset loaded into all layers (random per layer)";
 });
 
 $("applyPlaylistRand").addEventListener("click", ()=>{
   const listId = getSelectedPlaylistId();
   if (!listId){
-    $("status").textContent = "Status: select a preset or paste a playlist first";
+    $("status").textContent = "Status: select a preset first";
     return;
   }
   for (let i=0;i<linkLayerCount;i++){
     if (Math.random() < 0.6) loadPlaylistIntoLayer(i, listId);
   }
   rebuildLinkUI();
-  $("status").textContent = "Status: playlist loaded into random layers";
+  $("status").textContent = "Status: preset loaded into random layers";
 });
 
 /* =========================
@@ -1050,23 +1085,18 @@ function autoFit(which){
     return;
   }
   const srcAR = v.videoWidth / v.videoHeight;
-  const outAR = 16/9;
+  const outAR = 16/9; // stage is 16:9
   let z = 1.0;
   if (srcAR > outAR) z = srcAR / outAR; else z = outAR / srcAR;
   if (which==="A") $("aZoom").value = z.toFixed(2);
   else $("bZoom").value = z.toFixed(2);
   $("status").textContent = `Status: auto-fit ${which} (zoom=${z.toFixed(2)})`;
-  // refresh readout
-  const id = (which==="A") ? "aZoom" : "bZoom";
-  const out = document.querySelector(`[data-val-for="${id}"]`);
-  if (out) out.textContent = z.toFixed(2);
 }
 $("fitA").addEventListener("click", ()=>autoFit("A"));
 $("fitB").addEventListener("click", ()=>autoFit("B"));
 
 /* =========================
-   WebGL pipeline (same shader + engine as your last working version)
-   (kept as-is from prior build where targets work properly)
+   WebGL pipeline
 ========================= */
 const canvas=$("fxOut");
 let gl=null, prog=null, quadVBO=null;
@@ -1103,14 +1133,257 @@ varying vec2 vUv;
 void main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }
 `;
 
-/* NOTE: shader omitted here for brevity in this message.
-   Keep using the EXACT shader from the previous version where targets worked properly.
-   If you need me to paste the full shader again inline, say “paste full shader too”.
-*/
-const FS = `precision highp float;
+const FS=`
+precision highp float;
 varying vec2 vUv;
-/* ... your full FS from the previous working build ... */
-void main(){ gl_FragColor = vec4(vUv,0.0,1.0); }`; // placeholder to avoid gigantic paste
+
+uniform sampler2D uA;
+uniform sampler2D uB;
+uniform sampler2D uFB;
+uniform vec2 uRes;
+uniform float uTime;
+
+uniform int uHasA;
+uniform int uHasB;
+uniform int uUseAasB;
+
+uniform int uBlendMode;
+uniform float uBOpacity;
+uniform float uInvB;
+uniform float uExposure;
+uniform float uContrast;
+uniform float uSat;
+
+// Transform + crop per source
+uniform int uAFlipH; uniform int uAFlipV; uniform int uARot;
+uniform vec3 uACrop; // cx, cy, zoom
+uniform int uBFlipH; uniform int uBFlipV; uniform int uBRot;
+uniform vec3 uBCrop; // cx, cy, zoom
+
+// FX toggles
+uniform int uFeedbackOn;
+uniform float uFbAmt;
+uniform float uFbZoom;
+uniform float uFbRot;
+
+uniform int uKaleidoOn;
+uniform float uKSeg;
+uniform float uKAmt;
+uniform float uKSpin;
+
+uniform int uRGBOn;
+uniform float uRGBAmt;
+
+uniform int uGlitchOn;
+uniform float uGlitchAmt;
+
+uniform int uPixelOn;
+uniform float uPixSize;
+
+uniform int uScanOn;
+uniform float uScanAmt;
+
+uniform int uVigOn;
+uniform float uVigAmt;
+
+// FX targets: 0=A, 1=B, 2=Mix, 3=Final
+uniform int uFeedbackT;
+uniform int uKaleidoT;
+uniform int uRGBT;
+uniform int uGlitchT;
+uniform int uPixelT;
+
+vec3 satAdjust(vec3 c,float s){
+  float l=dot(c,vec3(0.2126,0.7152,0.0722));
+  return mix(vec3(l),c,s);
+}
+vec2 rot2(vec2 p,float a){
+  float c=cos(a), s=sin(a);
+  return mat2(c,-s,s,c)*p;
+}
+vec3 blend(vec3 a, vec3 b, int mode){
+  if (mode==0) return b;                          // normal
+  if (mode==1) return a*b;                        // multiply
+  if (mode==2) return 1.0-(1.0-a)*(1.0-b);        // screen
+  if (mode==3) return abs(a-b);                   // difference
+  if (mode==4) return a+b;                        // add
+  if (mode==5) return mix(2.0*a*b, 1.0-2.0*(1.0-a)*(1.0-b), step(0.5,a)); // overlay-ish
+  if (mode==6) return a + b - 2.0*a*b;            // exclusion-ish
+  return b;
+}
+float hash(vec2 p){
+  p=fract(p*vec2(123.34,456.21));
+  p+=dot(p,p+34.345);
+  return fract(p.x*p.y);
+}
+
+vec2 applyRot(vec2 uv, int r){
+  // r: 0,1,2,3 -> 0,90,180,270
+  if (r==1) return vec2(uv.y, 1.0-uv.x);
+  if (r==2) return vec2(1.0-uv.x, 1.0-uv.y);
+  if (r==3) return vec2(1.0-uv.y, uv.x);
+  return uv;
+}
+vec2 xfUv(vec2 uv, int flipH, int flipV, int rotQ){
+  uv = applyRot(uv, rotQ);
+  if (flipH==1) uv.x = 1.0-uv.x;
+  if (flipV==1) uv.y = 1.0-uv.y;
+  return clamp(uv,0.0,1.0);
+}
+vec2 cropUv(vec2 uv, vec3 c){
+  // center + zoom: uv' = (uv-0.5)/zoom + center
+  float z = max(1.0, c.z);
+  vec2 outUv = (uv - 0.5)/z + c.xy;
+  return clamp(outUv, 0.0, 1.0);
+}
+
+vec3 sampleA(vec2 uv){
+  if (uHasA!=1) return vec3(0.0);
+  vec2 u = xfUv(uv, uAFlipH, uAFlipV, uARot);
+  u = cropUv(u, uACrop);
+  return texture2D(uA, u).rgb;
+}
+vec3 sampleB(vec2 uv){
+  vec2 u = xfUv(uv, uBFlipH, uBFlipV, uBRot);
+  u = cropUv(u, uBCrop);
+  if (uHasB==1) return texture2D(uB, u).rgb;
+  if (uUseAasB==1 && uHasA==1) {
+    // use A but with B’s crop/transform
+    vec2 ua = xfUv(uv, uAFlipH, uAFlipV, uARot);
+    ua = cropUv(ua, uBCrop);
+    return texture2D(uA, ua).rgb;
+  }
+  return vec3(0.0);
+}
+
+vec3 rgbShift(vec3 base, vec2 uv, int which){
+  float amt = uRGBAmt;
+  vec2 off = vec2(amt, 0.0);
+  vec3 src0 = (which==0) ? sampleA(uv) : sampleB(uv);
+  vec3 srcR = (which==0) ? sampleA(uv+off) : sampleB(uv+off);
+  vec3 srcB = (which==0) ? sampleA(uv-off) : sampleB(uv-off);
+  vec3 rgb = vec3(srcR.r, src0.g, srcB.b);
+  return rgb;
+}
+
+void main(){
+  vec2 uv = vUv;
+
+  // Pixelate can target stage, so we hold original vUv too
+  vec2 uvPx = uv;
+  if (uPixelOn==1 && uPixelT==3){ // Final target pixelate needs uv pixelation early
+    float px=max(1.0,uPixSize);
+    uvPx=floor(uvPx*px)/px + 0.5/px;
+  }
+
+  // Source sampling
+  vec3 A = sampleA(uvPx);
+  vec3 B = sampleB(uvPx);
+  B = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
+
+  // RGB shift target
+  if (uRGBOn==1){
+    if (uRGBT==0) A = rgbShift(A, uvPx, 0);
+    else if (uRGBT==1) {
+      vec3 b2 = rgbShift(B, uvPx, 1);
+      b2 = mix(b2, 1.0-b2, clamp(uInvB,0.0,1.0));
+      B = b2;
+    }
+  }
+
+  // Mix stage
+  vec3 mixedB = blend(A,B,uBlendMode);
+  vec3 Mix = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
+
+  // Glitch (affects chosen stage by disturbing UV fetch)
+  if (uGlitchOn==1){
+    float g=uGlitchAmt;
+    float t=uTime*1.2;
+    float line=floor(uvPx.y*240.0);
+    float rnd=hash(vec2(line,floor(t*6.0)));
+    vec2 guv = uvPx;
+    guv.x += (rnd-0.5)*0.02*g;
+    float blockY=floor(uvPx.y*10.0);
+    float br=hash(vec2(blockY,floor(t*3.0)));
+    if (br < 0.18*g) guv.x += (br-0.09)*0.12*g;
+
+    if (uGlitchT==0) A = sampleA(guv);
+    else if (uGlitchT==1) { B = sampleB(guv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
+    else if (uGlitchT==2){
+      vec3 a2 = sampleA(guv);
+      vec3 b2 = sampleB(guv); b2 = mix(b2,1.0-b2,clamp(uInvB,0.0,1.0));
+      vec3 m2 = mix(a2, blend(a2,b2,uBlendMode), clamp(uBOpacity,0.0,1.0));
+      Mix = m2;
+    }
+  }
+
+  // Pixelate stage targeting (if not final)
+  if (uPixelOn==1 && uPixelT!=3){
+    float px=max(1.0,uPixSize);
+    vec2 puv = floor(uv*px)/px + 0.5/px;
+    if (uPixelT==0) A = sampleA(puv);
+    else if (uPixelT==1) { B = sampleB(puv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
+    else if (uPixelT==2){
+      vec3 a2 = sampleA(puv);
+      vec3 b2 = sampleB(puv); b2 = mix(b2,1.0-b2,clamp(uInvB,0.0,1.0));
+      Mix = mix(a2, blend(a2,b2,uBlendMode), clamp(uBOpacity,0.0,1.0));
+    }
+  }
+
+  vec3 Final = Mix;
+
+  // Feedback (targeted)
+  if (uFeedbackOn==1){
+    vec2 p = vUv - 0.5;
+    vec2 fbUv = rot2(p, uFbRot) / (1.0 + uFbZoom) + 0.5;
+    vec3 fb = texture2D(uFB, fbUv).rgb;
+    if (uFeedbackT==0) A = mix(A, fb, clamp(uFbAmt,0.0,0.98));
+    else if (uFeedbackT==1) B = mix(B, fb, clamp(uFbAmt,0.0,0.98));
+    else if (uFeedbackT==2) Final = mix(Mix, fb, clamp(uFbAmt,0.0,0.98));
+    else Final = mix(Final, fb, clamp(uFbAmt,0.0,0.98));
+  }
+
+  // Kaleido (targeted)
+  if (uKaleidoOn==1){
+    vec2 kp = vUv - 0.5;
+    float ang = atan(kp.y,kp.x);
+    float r = length(kp);
+    float seg = max(2.0, uKSeg);
+    float k = 6.28318530718/seg;
+    ang = mod(ang + uTime*uKSpin, k);
+    ang = abs(ang - k*0.5);
+    vec2 ku = vec2(cos(ang), sin(ang))*r;
+    vec2 uvk = ku + 0.5;
+
+    vec3 kA = sampleA(uvk);
+    vec3 kB = sampleB(uvk); kB = mix(kB, 1.0-kB, clamp(uInvB,0.0,1.0));
+    vec3 kMix = mix(kA, blend(kA,kB,uBlendMode), clamp(uBOpacity,0.0,1.0));
+
+    if (uKaleidoT==0) A = mix(A, kA, clamp(uKAmt,0.0,1.0));
+    else if (uKaleidoT==1) B = mix(B, kB, clamp(uKAmt,0.0,1.0));
+    else if (uKaleidoT==2) Final = mix(Mix, kMix, clamp(uKAmt,0.0,1.0));
+    else Final = mix(Final, kMix, clamp(uKAmt,0.0,1.0));
+  }
+
+  // Color controls on final
+  Final *= uExposure;
+  Final = (Final - 0.5)*uContrast + 0.5;
+  Final = satAdjust(Final, uSat);
+
+  if (uScanOn==1){
+    float s = sin(vUv.y*uRes.y*3.14159);
+    float scan = mix(1.0, 0.78 + 0.22*s, clamp(uScanAmt,0.0,1.0));
+    Final *= scan;
+  }
+  if (uVigOn==1){
+    float d = distance(vUv, vec2(0.5));
+    float v = smoothstep(0.35, 0.95, d);
+    Final *= mix(1.0, 1.0 - v, clamp(uVigAmt,0.0,1.0));
+  }
+
+  gl_FragColor = vec4(clamp(Final,0.0,1.0), 1.0);
+}
+`;
 
 function resizeCanvas(){
   const dpr=Math.min(2, window.devicePixelRatio||1);
@@ -1160,10 +1433,7 @@ function initGL(){
   gl = canvas.getContext("webgl", {antialias:false, alpha:false});
   if (!gl){ $("status").textContent="Status: WebGL not supported"; return; }
   prog = createProgram(gl, VS, FS);
-  if (!prog){
-    $("status").textContent="Status: shader compile failed (tell me and I’ll paste the full shader again)";
-    return;
-  }
+  if (!prog){ $("status").textContent="Status: shader compile failed"; return; }
   gl.useProgram(prog);
 
   quadVBO = gl.createBuffer();
@@ -1177,11 +1447,36 @@ function initGL(){
   texA=makeTex(); texB=makeTex();
   resizeCanvas();
 }
+
+function blendModeToInt(v){
+  if (v==="normal") return 0;
+  if (v==="multiply") return 1;
+  if (v==="screen") return 2;
+  if (v==="difference") return 3;
+  if (v==="add") return 4;
+  if (v==="overlay") return 5;
+  if (v==="exclusion") return 6;
+  return 3;
+}
+function targetToInt(v){
+  if (v==="a") return 0;
+  if (v==="b") return 1;
+  if (v==="mix") return 2;
+  return 3; // final
+}
+function rotToQ(v){
+  const n = parseInt(v,10) || 0;
+  if (n===90) return 1;
+  if (n===180) return 2;
+  if (n===270) return 3;
+  return 0;
+}
 function updateVideoTexture(tex, video){
   gl.bindTexture(gl.TEXTURE_2D, tex);
   try{ gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video); }catch(e){}
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
+
 function tick(t){
   if (gl && currentMode==="fx"){
     resizeCanvas();
@@ -1190,8 +1485,97 @@ function tick(t){
     if (hasA) updateVideoTexture(texA, capVideoA);
     if (hasB) updateVideoTexture(texB, capVideoB);
 
-    // NOTE: keep your full uniform wiring + pingpong from previous working build
-    // (omitted here just to keep this message from becoming absurdly huge)
+    gl.useProgram(prog);
+    const w=canvas.width, h=canvas.height;
+
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texA);
+    gl.uniform1i(gl.getUniformLocation(prog,"uA"), 0);
+
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texB);
+    gl.uniform1i(gl.getUniformLocation(prog,"uB"), 1);
+
+    const prevTex = (ping===0) ? fbTex0 : fbTex1;
+    const nextFbo = (ping===0) ? fbFbo1 : fbFbo0;
+
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, prevTex);
+    gl.uniform1i(gl.getUniformLocation(prog,"uFB"), 2);
+
+    gl.uniform2f(gl.getUniformLocation(prog,"uRes"), w, h);
+    gl.uniform1f(gl.getUniformLocation(prog,"uTime"), t/1000);
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uHasA"), hasA?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uHasB"), hasB?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), $("useAasB").checked ? 1 : 0);
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uBlendMode"), blendModeToInt($("fxBlend").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uBOpacity"), parseFloat($("fxBOpacity").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uInvB"), parseFloat($("fxInvB").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uExposure"), parseFloat($("fxExposure").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uContrast"), parseFloat($("fxContrast").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uSat"), parseFloat($("fxSat").value));
+
+    // transforms
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipH"), $("aFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipV"), $("aFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uARot"), rotToQ($("aRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uACrop"),
+      parseFloat($("aCx").value), parseFloat($("aCy").value), parseFloat($("aZoom").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipH"), $("bFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipV"), $("bFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBRot"), rotToQ($("bRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uBCrop"),
+      parseFloat($("bCx").value), parseFloat($("bCy").value), parseFloat($("bZoom").value));
+
+    // FX toggles
+    gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackOn"), $("tFeedback").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbAmt"), parseFloat($("feedbackAmt").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbZoom"), parseFloat($("feedbackZoom").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbRot"), parseFloat($("feedbackRot").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoOn"), $("tKaleido").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uKSeg"), parseFloat($("kSeg").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uKAmt"), parseFloat($("kAmt").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uKSpin"), parseFloat($("kSpin").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uRGBOn"), $("tRGB").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uRGBAmt"), parseFloat($("rgbAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uGlitchOn"), $("tGlitch").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uGlitchAmt"), parseFloat($("glitchAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uPixelOn"), $("tPixel").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uPixSize"), parseFloat($("pixSize").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uScanOn"), $("tScan").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uScanAmt"), parseFloat($("scanAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uVigOn"), $("tVig").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uVigAmt"), parseFloat($("vigAmt").value));
+
+    // FX targets
+    gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
+
+    // render to feedback
+    gl.bindFramebuffer(gl.FRAMEBUFFER, nextFbo);
+    gl.viewport(0,0,w,h);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // swap
+    ping = 1-ping;
+    const nowTex = (ping===0) ? fbTex0 : fbTex1;
+
+    // render to screen using updated feedback tex
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, nowTex);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0,0,w,h);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
   requestAnimationFrame(tick);
 }
@@ -1206,7 +1590,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
   initGL();
   rebuildLinkLayers();
   setMode("links");
-  bindAllValues();
   updateFxOverlay();
   requestAnimationFrame(tick);
 });
