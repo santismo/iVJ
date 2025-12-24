@@ -704,19 +704,6 @@ function buildEmbedSrc(videoId){
   const origin = encodeURIComponent(location.origin);
   const loopOn = $("loopVideos").value === "on";
   const loopPart = loopOn ? `&loop=1&playlist=${videoId}` : "";
-
-  // Prefer Invidious for embeds (may reduce ads; depends on instance + can break sometimes)
-  // NOTE: playback in your app is still "an iframe" either way; only the embed host changes.
-  const base = getInvidiousBase(); // uses your "Invidious base" field (default inv.nadeko.net)
-  const useInvidious = true;       // set false to force YouTube embeds
-
-  if (useInvidious){
-    // Invidious embed format
-    // (not all instances support every query param perfectly)
-    return `${base}/embed/${videoId}?autoplay=1&mute=1&controls=0${loopPart}`;
-  }
-
-  // Fallback: YouTube embed (ads possible)
   return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&enablejsapi=1&origin=${origin}${loopPart}`;
 }
 
