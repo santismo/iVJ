@@ -52,10 +52,13 @@
       border-radius:var(--radius); overflow:hidden; border:1px solid var(--border);
       background:#000; isolation:isolate;
     }
+
+    /* NEW: mixStage is what we want to capture + crop-to */
+    #mixStage{position:absolute; inset:0; z-index:10;}
+
     .layersRoot{position:absolute; inset:0; z-index:10;}
     .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter,transform; mix-blend-mode:normal; opacity:1;}
     .layer iframe{width:100%;height:100%;border:0;display:block;}
-    .layer video{width:100%;height:100%;display:block;object-fit:cover;background:#000}
 
     /* Link Mixer CSS FX target container */
     .cssfx-target{position:relative;}
@@ -106,13 +109,12 @@
         drop-shadow(calc(var(--rgbAmt,0px) * -1) 0 rgba(0,220,255,.65));
     }
 
-    /* ===== VIBE EXTENSIONS (fake trails + kaleido-ish via backdrop-filter/masks) ===== */
+    /* ===== VIBE EXTENSIONS ===== */
     .cssfxOverlayHost{
       position:absolute; inset:0;
       pointer-events:none;
       z-index:9994;
     }
-
     .cssfx-kaleidoGlass{
       position:absolute; inset:0;
       pointer-events:none;
@@ -166,16 +168,67 @@
         contrast(var(--trailContrast, 1.6))
         saturate(var(--trailSat, 1.2));
     }
-    .cssfx-trails.anim{
-      animation: cssfxSmear var(--trailSpeed, 0.14s) linear infinite;
-    }
+    .cssfx-trails.anim{ animation: cssfxSmear var(--trailSpeed, 0.14s) linear infinite; }
     @keyframes cssfxSmear{
       0%{ transform: translate(0px,0px) }
       50%{ transform: translate(var(--trailDx, 1px), var(--trailDy, -1px)) }
       100%{ transform: translate(0px,0px) }
     }
 
-    canvas#fxOut{position:absolute; inset:0; width:100%; height:100%; display:none; z-index:30;}
+    /* WebGL output canvas (used by FX Capture AND Link Mixer Self-Capture FX) */
+    canvas#fxOut{
+      position:absolute; inset:0; width:100%; height:100%;
+      display:none;
+      z-index:30;
+    }
+
+    /* NEW: floating FX button for self-capture */
+    .fxFloat{
+      position:absolute;
+      right:12px;
+      bottom:12px;
+      z-index:60;
+      display:none; /* only shown when self-capture is active */
+      gap:8px;
+      align-items:center;
+      pointer-events:auto;
+      user-select:none;
+    }
+    .fxFloat .btn{
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.28);
+      color:rgba(255,255,255,.92);
+      backdrop-filter: blur(8px);
+      border-radius:999px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:13px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      opacity:.82;
+      transition:opacity .15s ease, transform .15s ease;
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+    }
+    .fxFloat .btn:hover{ opacity:1; transform:translateY(-1px); }
+    .fxFloat .btn.small{ padding:10px 10px; }
+    .fxFloat .dot{
+      width:8px;height:8px;border-radius:99px;
+      background:rgba(122,162,255,.95);
+      box-shadow:0 0 0 2px rgba(122,162,255,.20);
+    }
+    .fxFloat.min .label{ display:none; }
+    .fxFloat.min .btn{ padding:10px 10px; }
+    .fxFloat .hint{
+      font-size:11px;
+      color:rgba(255,255,255,.75);
+      background:rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:999px;
+      padding:6px 10px;
+      backdrop-filter: blur(8px);
+      opacity:.7;
+    }
 
     .fxLoading{
       position:absolute; inset:0; display:none; z-index:40;
@@ -310,18 +363,32 @@
   </div>
 
   <div class="stage" id="stage">
-    <div class="layersRoot" id="layersRoot"></div>
+    <!-- NEW: capture target wrapper -->
+    <div id="mixStage">
+      <div class="layersRoot" id="layersRoot"></div>
 
-    <!-- CSS FX overlays (Link Mixer) -->
-    <div class="cssfxOverlayHost" id="cssfxOverlayHost" style="display:none;">
-      <div class="cssfx-trails" id="ovTrails"></div>
-      <div class="cssfx-kaleidoGlass" id="ovKaleido"></div>
-      <div class="cssfx-kaleidoMirrorL" id="ovMirrorL"></div>
-      <div class="cssfx-kaleidoMirrorR" id="ovMirrorR"></div>
+      <!-- CSS FX overlays (Link Mixer) -->
+      <div class="cssfxOverlayHost" id="cssfxOverlayHost" style="display:none;">
+        <div class="cssfx-trails" id="ovTrails"></div>
+        <div class="cssfx-kaleidoGlass" id="ovKaleido"></div>
+        <div class="cssfx-kaleidoMirrorL" id="ovMirrorL"></div>
+        <div class="cssfx-kaleidoMirrorR" id="ovMirrorR"></div>
+      </div>
     </div>
 
-    <!-- WebGL output (FX Capture + optional Link Mixer WebGL) -->
+    <!-- WebGL output (FX Capture OR Link Mixer Self-Capture FX) -->
     <canvas id="fxOut"></canvas>
+
+    <!-- NEW: floating overlay controls for self-capture -->
+    <div class="fxFloat" id="fxFloat">
+      <div class="btn small" id="fxFloatMin" title="Minimize / Expand">✦</div>
+      <div class="btn" id="fxFloatOpen" title="Open FX controls">
+        <span class="dot"></span>
+        <span class="label">FX</span>
+      </div>
+      <div class="btn" id="fxFloatStop" title="Stop self-capture FX">Stop</div>
+      <div class="hint" id="fxFloatHint">Self-Capture ON</div>
+    </div>
 
     <div class="fxLoading" id="fxLoading">
       <div class="box">
@@ -339,9 +406,8 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <span class="badge" id="modeBadge">Mode: Link Mixer</span>
         <span class="badge" id="status">Status: idle</span>
-        <span class="badge" id="renderBadge">Render: DOM</span>
       </div>
-      <div class="small" id="tipText">Tip: Capture mode → theater/fullscreen helps “mostly just video”.</div>
+      <div class="small">Tip: Fullscreen stage + self-capture FX = “real FX” on the Link Mixer output.</div>
     </div>
 
     <div class="controlsBody" id="controlsBody">
@@ -373,28 +439,20 @@
                 </label>
               </div>
 
-              <!-- NEW: Video mode + WebGL in Link Mixer -->
+              <!-- NEW: Self-capture Link Mixer FX -->
               <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">Link Mixer: Better FX (Invidious → &lt;video&gt;)</div></div>
+                <div class="cardHead"><div class="cardTitle">Real FX on Link Mixer (Self-Capture)</div></div>
                 <div class="cardBody">
-                  <div class="row">
-                    <label class="toggle">
-                      <input id="linkVideoMode" type="checkbox">
-                      Video Mode (use Invidious proxied streams instead of YouTube iframes)
-                    </label>
-                    <label class="toggle" style="align-self:end">
-                      <input id="linkWebglFxOn" type="checkbox">
-                      Real WebGL FX in Link Mixer (uses Layer 1 as A and Layer 2 as B)
-                    </label>
-                  </div>
                   <div class="small">
-                    • Video Mode tries to load direct streams from your chosen Invidious base. If it fails, it auto-falls back to iframe.<br/>
-                    • WebGL FX in Link Mixer can do true feedback/kaleido/trails — but only when sources are real &lt;video&gt; (not iframes).<br/>
-                    • WebGL Link FX uses the <b>same FX sliders</b> from the FX Capture panel (Feedback/Kaleido/Glitch/etc). You can tweak there while staying in Link Mixer.
+                    This captures <b>your Link Mixer output</b> and runs the same WebGL FX pipeline (feedback/kaleido/etc.) on it.
+                    Best results: click <b>Fullscreen Stage</b> first, then enable.
                   </div>
-                  <div class="miniBtns" style="margin-top:6px">
-                    <button id="openFxPanel" class="primary">Open FX Controls</button>
-                    <button id="linkFxResetFb">Reset Link Feedback Buffer</button>
+                  <div class="miniBtns">
+                    <button id="linkFxOn" class="primary">Enable Self-Capture FX</button>
+                    <button id="linkFxOff">Stop Self-Capture FX</button>
+                  </div>
+                  <div class="small" style="opacity:.9">
+                    If your browser supports it, we’ll auto-crop the capture to the stage content so the FX overlay button won’t “feedback into itself.”
                   </div>
                 </div>
               </div>
@@ -406,7 +464,7 @@
                   <div class="row">
                     <label class="toggle">
                       <input id="cssFxOn" type="checkbox">
-                      Enable Link Mixer CSS FX
+                      Enable Link Mixer FX
                     </label>
                     <label>Target
                       <select id="cssFxTarget">
@@ -592,11 +650,11 @@
               <div class="deckList" id="deckList"></div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
-                <div class="cardHead"><div class="cardTitle">Why Link Mixer FX used to be limited</div></div>
+                <div class="cardHead"><div class="cardTitle">Why real WebGL FX needs capture</div></div>
                 <div class="cardBody">
                   <div class="small">
-                    YouTube/Invidious embeds are cross-origin iframes: browsers block pixel access → true WebGL feedback/kaleido can’t run on them.<br/>
-                    <b>Video Mode</b> swaps iframes for proxied <b>&lt;video&gt;</b> sources (when an Invidious instance cooperates), enabling <b>real WebGL FX</b>.
+                    YouTube/Invidious embeds are cross-origin: browsers block pixel access, so real WebGL FX can’t run on them directly.
+                    Self-Capture FX captures your mixed output (which <i>is</i> allowed) then runs WebGL FX on that.
                   </div>
                 </div>
               </div>
@@ -737,7 +795,7 @@
             </div>
           </div>
 
-          <div class="card">
+          <div class="card" id="fxCard">
             <div class="cardHead">
               <div class="cardTitle">FX (choose what they affect)</div>
               <div class="miniBtns"><button id="fxAllOff">All FX Off</button></div>
@@ -859,7 +917,7 @@
               </div>
 
               <div class="small">
-                Link Mixer WebGL FX uses these settings too (when enabled). If Link Mixer WebGL looks black, your Invidious instance likely isn’t CORS-friendly for video pixels — switch base or turn off WebGL.
+                In Link Mixer Self-Capture, you’re processing the mixed stage as “A”. We auto-set “Use A as B” + “Blend: normal” for sane defaults.
               </div>
             </div>
           </div>
@@ -876,21 +934,30 @@ const $ = (id)=>document.getElementById(id);
    Mode + Controls
 ========================= */
 let currentMode = "links";
+
+/* NEW: Link Mixer Self-Capture FX state */
+let linkSelfFxOn = false;
+
 function setMode(mode){
   currentMode = mode;
   $("tabLinks").classList.toggle("active", mode==="links");
   $("tabFX").classList.toggle("active", mode==="fx");
   $("modeBadge").textContent = mode==="links" ? "Mode: Link Mixer" : "Mode: FX Capture";
+
+  // Link Mixer visuals are inside mixStage
+  $("mixStage").style.display = mode==="links" ? "block" : "none";
+
+  // fxOut visible in FX mode OR when Link Self FX is on
+  $("fxOut").style.display = (mode==="fx" || linkSelfFxOn) ? "block" : "none";
+
   $("modeLinks").style.display = mode==="links" ? "block" : "none";
   $("modeFX").style.display = mode==="fx" ? "block" : "none";
+
   $("status").textContent = "Status: " + (mode==="links" ? "Link Mixer ready" : "FX Capture ready");
-  $("tipText").textContent = (mode==="links")
-    ? "Tip: For true feedback/kaleido in Link Mixer, enable Video Mode + Real WebGL FX."
-    : "Tip: Capture mode → theater/fullscreen helps “mostly just video”.";
   updateFxLoadingOverlay();
-  updateRenderMode();
   resizeCanvas();
 
+  // Link Mixer FX (CSS) apply only in links mode
   if (mode==="links"){ applyCssFx(); applyVibeFx(); }
 }
 $("tabLinks").addEventListener("click", ()=>setMode("links"));
@@ -953,7 +1020,7 @@ const BLENDS = [
 ];
 
 let linkLayerCount = 2;
-const linkLayers = []; // {el, ui, url, auto:{on,ms,deckKey}, iframe, video}
+const linkLayers = []; // {el, ui, url, auto:{on,ms,deckKey}}
 let layerAutoTimers = new Map();
 
 /* =========================
@@ -1214,48 +1281,6 @@ function fillBlendOptions(sel, def="difference"){
 }
 
 /* =========================
-   NEW: Invidious -> direct/proxied stream URL
-========================= */
-async function fetchInvidiousStreamUrl(videoId){
-  const base = getInvidiousBase();
-  const apiUrl = `${base}/api/v1/videos/${encodeURIComponent(videoId)}?local=true`;
-  const r = await fetch(apiUrl, { mode:"cors" });
-  if (!r.ok) throw new Error(`Invidious videos API failed: ${r.status}`);
-  const j = await r.json();
-
-  const formats = []
-    .concat(Array.isArray(j.formatStreams) ? j.formatStreams : [])
-    .concat(Array.isArray(j.adaptiveFormats) ? j.adaptiveFormats : []);
-
-  const playable = formats
-    .filter(f => typeof f?.url === "string")
-    .map(f => ({
-      url: f.url,
-      container: (f.container || "").toLowerCase(),
-      type: (f.type || "").toLowerCase(),
-      quality: f.qualityLabel || f.resolution || "",
-      bitrate: Number(f.bitrate || 0),
-      fps: Number(f.fps || 0)
-    }))
-    .filter(f => f.type.includes("video") || f.container);
-
-  playable.sort((a,b)=>{
-    const am = a.container.includes("mp4") ? 1 : 0;
-    const bm = b.container.includes("mp4") ? 1 : 0;
-    if (am !== bm) return bm - am;
-    if (a.bitrate !== b.bitrate) return b.bitrate - a.bitrate;
-    if (a.fps !== b.fps) return b.fps - a.fps;
-    return 0;
-  });
-
-  if (!playable.length) throw new Error("No playable formats returned.");
-  return playable[0].url;
-}
-function linkUsesVideoMode(){
-  return $("linkVideoMode")?.checked === true;
-}
-
-/* =========================
    Link layers + UI
 ========================= */
 function makeLinkLayer(i){
@@ -1281,69 +1306,15 @@ function applyLinkStyle(i){
   L.el.style.transformOrigin = `${cx*100}% ${cy*100}%`;
   L.el.style.transform = `translate(${tx}%, ${ty}%) scale(${z})`;
 
-  // keep it simple + stable for video/iframe
   L.el.style.filter = `invert(${L.ui.inv}) contrast(${L.ui.ct}) saturate(${L.ui.sat}) hue-rotate(${L.ui.hue}deg)`;
 }
-
-async function mountLinkSource(i){
+function mountLinkIframe(i){
   const L = linkLayers[i];
   const vid = extractVideoId(L.url);
-  L.el.innerHTML = "";
-  L.iframe = null;
-  L.video = null;
-  if (!vid) return;
-
-  if (!linkUsesVideoMode()){
-    const src = buildEmbedSrc(vid);
-    L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
-    L.iframe = L.el.querySelector("iframe");
-    return;
-  }
-
-  // Video Mode: attempt proxied stream via Invidious
-  try{
-    $("status").textContent = `Status: fetching stream for L${i+1}…`;
-    const streamUrl = await fetchInvidiousStreamUrl(vid);
-
-    const v = document.createElement("video");
-    v.setAttribute("playsinline", "");
-    v.muted = true;
-    v.autoplay = true;
-    v.loop = ($("loopVideos").value === "on");
-    v.preload = "auto";
-
-    // If instance sends proper CORS headers, WebGL can sample pixels.
-    v.crossOrigin = "anonymous";
-
-    v.src = streamUrl;
-
-    v.addEventListener("error", async ()=>{
-      // Refresh expired URLs once
-      try{
-        const fresh = await fetchInvidiousStreamUrl(vid);
-        v.src = fresh;
-        v.play().catch(()=>{});
-      }catch(e){
-        // fallback to iframe as last resort
-        const src = buildEmbedSrc(vid);
-        L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
-        L.iframe = L.el.querySelector("iframe");
-        L.video = null;
-        updateRenderMode();
-      }
-    });
-
-    L.el.appendChild(v);
-    L.video = v;
-    v.play().catch(()=>{});
-    $("status").textContent = `Status: video mode L${i+1} ready`;
-  }catch(e){
-    console.warn(e);
-    $("status").textContent = `Status: video mode failed for L${i+1} (try another Invidious base)`;
-    const src = buildEmbedSrc(vid);
-    L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
-    L.iframe = L.el.querySelector("iframe");
-  }
+  if (!vid){ L.el.innerHTML=""; L.iframe=null; return; }
+  const src = buildEmbedSrc(vid);
+  L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
+  L.iframe = L.el.querySelector("iframe");
 }
 
 /* YouTube JS API postMessage controls */
@@ -1358,18 +1329,8 @@ function ytCommand(i, cmd){
     );
   }catch(e){}
 }
-function playLayer(i){
-  const L = linkLayers[i];
-  if (L?.video){ L.video.play().catch(()=>{}); $("status").textContent=`Status: play L${i+1}`; return; }
-  ytCommand(i,"playVideo");
-  $("status").textContent=`Status: play L${i+1}`;
-}
-function pauseLayer(i){
-  const L = linkLayers[i];
-  if (L?.video){ L.video.pause(); $("status").textContent=`Status: pause L${i+1}`; return; }
-  ytCommand(i,"pauseVideo");
-  $("status").textContent=`Status: pause L${i+1}`;
-}
+function playLayer(i){ ytCommand(i,"playVideo"); $("status").textContent=`Status: play L${i+1}`; }
+function pauseLayer(i){ ytCommand(i,"pauseVideo"); $("status").textContent=`Status: pause L${i+1}`; }
 
 /* Push video to a specific layer, OR (layerIndex=null) use deckTargetLayer dropdown */
 function pushVideoToLayer(videoId, layerIndex=null){
@@ -1383,7 +1344,7 @@ function pushVideoToLayer(videoId, layerIndex=null){
   const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
   if (inp) inp.value = url;
 
-  mountLinkSource(i);
+  mountLinkIframe(i);
   applyLinkStyle(i);
   $("status").textContent = `Status: set Layer ${i+1}`;
 }
@@ -1550,7 +1511,6 @@ function rebuildLinkLayers(){
     linkLayers.push({
       el,
       iframe: null,
-      video: null,
       url: DEFAULT_LINKS[i] || DEFAULT_LINKS[1],
       ui: {
         op:i===0?1:0.85,
@@ -1563,39 +1523,19 @@ function rebuildLinkLayers(){
       },
       auto: { on:false, ms:30000, deckKey: DEFAULT_DECK_KEY }
     });
-    mountLinkSource(i);
+    mountLinkIframe(i);
     applyLinkStyle(i);
   }
   rebuildLinkUI();
   applyCssFx();
   applyVibeFx();
-  updateRenderMode();
 }
 
-$("addLayer").addEventListener("click", ()=>{
-  // If Link WebGL FX is ON, we keep it 2 layers (A/B). Prevent confusion.
-  if ($("linkWebglFxOn").checked){
-    $("status").textContent = "Status: Link WebGL FX uses L1/L2 only (disable it to use 3–5 layers).";
-    return;
-  }
-  if (linkLayerCount<5){ linkLayerCount++; rebuildLinkLayers(); renderDecks(); }
-});
-$("removeLayer").addEventListener("click", ()=>{
-  if (linkLayerCount>2){ linkLayerCount--; rebuildLinkLayers(); renderDecks(); }
-});
-$("reloadLinks").addEventListener("click", ()=>{
-  for (let i=0;i<linkLayerCount;i++){ mountLinkSource(i); applyLinkStyle(i); }
-});
-$("tapUI").addEventListener("change", ()=>{
-  for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i);
-});
-$("loopVideos").addEventListener("change", ()=>{
-  for (let i=0;i<linkLayerCount;i++){
-    const L = linkLayers[i];
-    if (L?.video) L.video.loop = ($("loopVideos").value==="on");
-    else mountLinkSource(i);
-  }
-});
+$("addLayer").addEventListener("click", ()=>{ if (linkLayerCount<5){ linkLayerCount++; rebuildLinkLayers(); renderDecks(); }});
+$("removeLayer").addEventListener("click", ()=>{ if (linkLayerCount>2){ linkLayerCount--; rebuildLinkLayers(); renderDecks(); }});
+$("reloadLinks").addEventListener("click", ()=>{ for (let i=0;i<linkLayerCount;i++){ mountLinkIframe(i); applyLinkStyle(i);} });
+$("tapUI").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i); });
+$("loopVideos").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) mountLinkIframe(i); });
 
 $("layerList").addEventListener("input", (e)=>{
   const t=e.target;
@@ -1630,7 +1570,7 @@ $("layerList").addEventListener("click", (e)=>{
   if (!btn) return;
   const i=parseInt(btn.getAttribute("data-i"),10);
   const act = btn.getAttribute("data-act");
-  if (act==="apply"){ mountLinkSource(i); applyLinkStyle(i); }
+  if (act==="apply"){ mountLinkIframe(i); applyLinkStyle(i); }
   if (act==="pickRandom"){ pickRandomIntoLayer(i); }
   if (act==="play"){ playLayer(i); }
   if (act==="pause"){ pauseLayer(i); }
@@ -1645,6 +1585,7 @@ function cssFxTargets(){
   return [stageEl];
 }
 function applyCssFx(){
+  // clear
   [stageEl, ...document.querySelectorAll(".layer")].forEach(el=>{
     el.classList.remove("cssfx-target","cssfx-glitch","cssfx-rgb");
     el.style.removeProperty("--cssfxFilter");
@@ -1655,10 +1596,8 @@ function applyCssFx(){
   });
 
   if (currentMode !== "links") return;
-
-  // If Link WebGL FX is ON, CSS FX isn’t useful (we can keep it available though).
   const on = $("cssFxOn")?.checked;
-  $("cssfxOverlayHost").style.display = on ? "block" : "none";
+  $("cssfxOverlayHost").style.display = on ? "block" : "none"; // overlays are part of Link Mixer FX
   if (!on) return;
 
   const exposure = parseFloat($("cssExposure").value);
@@ -1713,6 +1652,7 @@ function applyVibeFx(){
   const ovMirrorL = $("ovMirrorL");
   const ovMirrorR = $("ovMirrorR");
 
+  // Trails vibe
   const trailsOn = $("cssTrailsOn")?.checked;
   const trailsAmt = parseFloat($("cssTrailsAmt")?.value || "0");
   const trailsBlur = parseFloat($("cssTrailsBlur")?.value || "7");
@@ -1727,6 +1667,7 @@ function applyVibeFx(){
   ovTrails.style.setProperty("--trailSpeed", `${Math.max(0.06, 0.18 - trailsAmt*0.10).toFixed(2)}s`);
   ovTrails.classList.toggle("anim", !!(trailsOn && trailsAnim && trailsAmt > 0.01));
 
+  // Kaleido vibe
   const kOn = $("cssKaleidoOn")?.checked;
   const kAmt = parseFloat($("cssKaleidoAmt")?.value || "0");
   const kSeg = parseFloat($("cssKSeg")?.value || "6");
@@ -1772,63 +1713,6 @@ function vibeTick(){
 }
 
 /* =========================
-   NEW: Link Mixer WebGL toggle + render switching
-========================= */
-function linkWebglEnabled(){
-  return (currentMode==="links") && $("linkWebglFxOn")?.checked && linkUsesVideoMode();
-}
-function updateRenderMode(){
-  const webglOn = linkWebglEnabled();
-  // Stage render selection:
-  // - FX mode: always canvas
-  // - Link mode: canvas only if linkWebglEnabled, otherwise DOM layers
-  const showCanvas = (currentMode==="fx") || webglOn;
-
-  $("fxOut").style.display = showCanvas ? "block" : "none";
-  $("layersRoot").style.display = (currentMode==="links" && !webglOn) ? "block" : "none";
-
-  // CSS FX and overlays only when DOM is visible (optional, but keeps things sane)
-  const domVisible = (currentMode==="links" && !webglOn);
-  $("cssfxOverlayHost").style.display = (domVisible && $("cssFxOn")?.checked) ? "block" : "none";
-
-  $("renderBadge").textContent = (currentMode==="fx")
-    ? "Render: WebGL (Capture)"
-    : (webglOn ? "Render: WebGL (Link Mixer)" : "Render: DOM");
-
-  // If Link WebGL is ON, force 2 layers for clarity
-  if (currentMode==="links" && $("linkWebglFxOn").checked && linkLayerCount !== 2){
-    linkLayerCount = 2;
-    rebuildLinkLayers();
-    renderDecks();
-    $("status").textContent = "Status: Link WebGL FX enabled → forced 2 layers (A/B)";
-  }
-  resizeCanvas();
-}
-$("linkVideoMode").addEventListener("change", ()=>{
-  // remount all layers in chosen mode
-  for (let i=0;i<linkLayerCount;i++) mountLinkSource(i);
-  updateRenderMode();
-});
-$("linkWebglFxOn").addEventListener("change", ()=>{
-  updateRenderMode();
-  // If enabling, remount in video mode if needed
-  if ($("linkWebglFxOn").checked && !$("linkVideoMode").checked){
-    $("linkVideoMode").checked = true;
-    for (let i=0;i<linkLayerCount;i++) mountLinkSource(i);
-  }
-  // reset link feedback buffer so it starts clean
-  requestLinkFeedbackReset();
-});
-$("openFxPanel").addEventListener("click", ()=>setMode("fx"));
-
-let linkResetFbFlag = false;
-function requestLinkFeedbackReset(){ linkResetFbFlag = true; }
-$("linkFxResetFb").addEventListener("click", ()=>{
-  requestLinkFeedbackReset();
-  $("status").textContent = "Status: Link feedback buffer reset requested";
-});
-
-/* =========================
    MODE 2: FX Capture + WebGL
 ========================= */
 let capStreamA=null, capStreamB=null;
@@ -1836,6 +1720,21 @@ const capVideoA=document.createElement("video");
 const capVideoB=document.createElement("video");
 capVideoA.muted=true; capVideoB.muted=true;
 capVideoA.playsInline=true; capVideoB.playsInline=true;
+
+/* NEW: track crop helpers (if supported) */
+async function tryCropTrackToElement(track, el){
+  // Best-effort: Chrome's "Element Capture / CropTarget"
+  try{
+    const CT = window.CropTarget;
+    if (!CT || typeof CT.fromElement !== "function") return false;
+    if (typeof track.cropTo !== "function") return false;
+    const target = await CT.fromElement(el);
+    await track.cropTo(target);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
 
 function updateFxLoadingOverlay(){
   const on = (currentMode==="fx") && (!capStreamA && !capStreamB);
@@ -1894,15 +1793,124 @@ $("fitA").addEventListener("click", ()=>autoFit("A"));
 $("fitB").addEventListener("click", ()=>autoFit("B"));
 
 /* =========================
-   WebGL pipeline (shared for FX Capture + Link Mixer WebGL)
+   NEW: Link Mixer Self-Capture FX
+========================= */
+function showFxFloat(show){
+  const el = $("fxFloat");
+  el.style.display = show ? "flex" : "none";
+  if (!show) el.classList.remove("min");
+}
+
+function openFxControls(){
+  // If we're in links mode, open controls and scroll to FX card (in FX mode section)
+  controls.classList.add("open");
+  $("btnToggleControls").textContent = "Hide Controls";
+
+  // If user is on Link Mixer tab, we still want to show FX controls:
+  // easiest: switch to FX tab visually? NO — user requested fullscreen mixing.
+  // We keep mode as-is, but ensure FX mode section is visible for editing.
+  // We'll temporarily show FX panel *within controls* by switching tab to FX (doesn't affect stage visuals).
+  // Stage visuals are controlled by linkSelfFxOn flag.
+  setMode("fx");
+  // but keep Link mixer running behind? that's inside mixStage which we hide in FX mode.
+  // so: after switching to FX mode for UI, re-show mixStage if self-capture is on.
+  if (linkSelfFxOn){
+    $("mixStage").style.display = "block";
+    $("fxOut").style.display = "block";
+  }
+
+  // Scroll to FX card
+  setTimeout(()=>{ $("fxCard")?.scrollIntoView({behavior:"smooth", block:"start"}); }, 60);
+}
+
+$("fxFloatOpen").addEventListener("click", openFxControls);
+$("fxFloatStop").addEventListener("click", ()=>stopLinkSelfFx());
+$("fxFloatMin").addEventListener("click", ()=>{
+  $("fxFloat").classList.toggle("min");
+});
+
+/* Buttons in Link Mixer */
+$("linkFxOn").addEventListener("click", ()=>startLinkSelfFx());
+$("linkFxOff").addEventListener("click", ()=>stopLinkSelfFx());
+
+async function startLinkSelfFx(){
+  try{
+    // defaults that make single-source FX sane:
+    $("useAasB").checked = true;
+    $("fxBlend").value = "normal";
+    $("fxBOpacity").value = "1";
+    $("fxInvB").value = "0";
+    $("feedbackTarget").value = "final";
+    $("kaleidoTarget").value = "final";
+    $("rgbTarget").value = "final";
+    $("glitchTarget").value = "final";
+    $("pixelTarget").value = "final";
+    hookRangeReadouts();
+
+    // Ask to capture — user should choose "This Tab" for best
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:60 }, audio:false });
+
+    // attempt crop to just mixStage (so fxOut + float button don't feedback into capture)
+    const track = stream.getVideoTracks()[0];
+    const cropped = await tryCropTrackToElement(track, $("mixStage"));
+
+    capStreamA = stream;
+    capVideoA.srcObject = stream;
+    await capVideoA.play();
+
+    // make link fx active
+    linkSelfFxOn = true;
+    $("fxOut").style.display = "block";
+    showFxFloat(true);
+
+    // keep user in Link Mixer view
+    setMode("links");
+
+    // show status
+    $("status").textContent = cropped
+      ? "Status: Link FX ON (self-capture, auto-cropped)"
+      : "Status: Link FX ON (self-capture) — if FX ‘loops’, your browser may not support auto-crop";
+
+  }catch(e){
+    console.error(e);
+    linkSelfFxOn = false;
+    showFxFloat(false);
+    $("fxOut").style.display = "none";
+    $("status").textContent = "Status: self-capture canceled/blocked";
+  }finally{
+    updateFxLoadingOverlay();
+  }
+}
+
+function stopLinkSelfFx(){
+  if (capStreamA){
+    try{
+      for (const tr of capStreamA.getTracks()) tr.stop();
+    }catch(e){}
+  }
+  capStreamA = null;
+  capVideoA.srcObject = null;
+
+  linkSelfFxOn = false;
+  showFxFloat(false);
+
+  // If we are not in FX mode, hide fxOut
+  if (currentMode !== "fx") $("fxOut").style.display = "none";
+
+  // return user to Link Mixer display
+  setMode("links");
+
+  $("status").textContent = "Status: Link FX OFF";
+  updateFxLoadingOverlay();
+}
+
+/* =========================
+   WebGL pipeline (shared)
 ========================= */
 const canvas=$("fxOut");
 let gl=null, prog=null, quadVBO=null;
 let texA=null, texB=null;
 let fbTex0=null, fbTex1=null, fbFbo0=null, fbFbo1=null, ping=0;
-
-// Separate ping buffers for Link Mixer vs Capture so switching modes doesn't "smear" states
-let linkFbTex0=null, linkFbTex1=null, linkFbFbo0=null, linkFbFbo1=null, linkPing=0;
 
 function createShader(gl,type,src){
   const sh=gl.createShader(type);
@@ -1934,7 +1942,8 @@ varying vec2 vUv;
 void main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }
 `;
 
-const FS=`
+// (Shader unchanged from your version)
+const FS = document.currentScript?.textContent?.includes("precision highp float") ? "" : `
 precision highp float;
 varying vec2 vUv;
 
@@ -2203,7 +2212,6 @@ function resizeCanvas(){
     if (gl){
       gl.viewport(0,0,w,h);
       initFeedbackTextures(w,h);
-      initLinkFeedbackTextures(w,h);
     }
   }
 }
@@ -2238,28 +2246,6 @@ function initFeedbackTextures(w,h){
   fbFbo0=makeFBO(fbTex0); fbFbo1=makeFBO(fbTex1);
   ping=0;
 }
-function initLinkFeedbackTextures(w,h){
-  function makeFBTex(){
-    const t=makeTex();
-    gl.bindTexture(gl.TEXTURE_2D,t);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-    gl.bindTexture(gl.TEXTURE_2D,null);
-    return t;
-  }
-  function makeFBO(tex){
-    const f=gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER,f);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-    return f;
-  }
-  [linkFbTex0,linkFbTex1].forEach(t=>t&&gl.deleteTexture(t));
-  [linkFbFbo0,linkFbFbo1].forEach(f=>f&&gl.deleteFramebuffer(f));
-  linkFbTex0=makeFBTex(); linkFbTex1=makeFBTex();
-  linkFbFbo0=makeFBO(linkFbTex0); linkFbFbo1=makeFBO(linkFbTex1);
-  linkPing=0;
-}
-
 function initGL(){
   gl = canvas.getContext("webgl", {antialias:false, alpha:false});
   if (!gl){ $("status").textContent="Status: WebGL not supported"; return; }
@@ -2308,132 +2294,105 @@ function updateVideoTexture(tex, video){
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
 
-function setUniformsForFx(t, hasA, hasB){
-  const w=canvas.width, h=canvas.height;
-  gl.uniform2f(gl.getUniformLocation(prog,"uRes"), w, h);
-  gl.uniform1f(gl.getUniformLocation(prog,"uTime"), t/1000);
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uHasA"), hasA?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uHasB"), hasB?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), $("useAasB").checked ? 1 : 0);
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uBlendMode"), blendModeToInt($("fxBlend").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uBOpacity"), parseFloat($("fxBOpacity").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uInvB"), parseFloat($("fxInvB").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uExposure"), parseFloat($("fxExposure").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uContrast"), parseFloat($("fxContrast").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uSat"), parseFloat($("fxSat").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uAFlipH"), $("aFlipH").checked?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uAFlipV"), $("aFlipV").checked?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uARot"), rotToQ($("aRot").value));
-  gl.uniform3f(gl.getUniformLocation(prog,"uACrop"),
-    parseFloat($("aCx").value), parseFloat($("aCy").value), parseFloat($("aZoom").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uBFlipH"), $("bFlipH").checked?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uBFlipV"), $("bFlipV").checked?1:0);
-  gl.uniform1i(gl.getUniformLocation(prog,"uBRot"), rotToQ($("bRot").value));
-  gl.uniform3f(gl.getUniformLocation(prog,"uBCrop"),
-    parseFloat($("bCx").value), parseFloat($("bCy").value), parseFloat($("bZoom").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackOn"), $("tFeedback").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uFbAmt"), parseFloat($("feedbackAmt").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uFbZoom"), parseFloat($("feedbackZoom").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uFbRot"), parseFloat($("feedbackRot").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoOn"), $("tKaleido").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uKSeg"), parseFloat($("kSeg").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uKAmt"), parseFloat($("kAmt").value));
-  gl.uniform1f(gl.getUniformLocation(prog,"uKSpin"), parseFloat($("kSpin").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uRGBOn"), $("tRGB").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uRGBAmt"), parseFloat($("rgbAmt").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uGlitchOn"), $("tGlitch").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uGlitchAmt"), parseFloat($("glitchAmt").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uPixelOn"), $("tPixel").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uPixSize"), parseFloat($("pixSize").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uScanOn"), $("tScan").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uScanAmt"), parseFloat($("scanAmt").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uVigOn"), $("tVig").checked?1:0);
-  gl.uniform1f(gl.getUniformLocation(prog,"uVigAmt"), parseFloat($("vigAmt").value));
-
-  gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
-  gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
-  gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
-  gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
-  gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
-}
-
-function renderWebglFrame(t, sourceA, sourceB, fbTexPrev, fbFboNext){
-  resizeCanvas();
-  const hasA = !!sourceA && sourceA.readyState>=2;
-  const hasB = !!sourceB && sourceB.readyState>=2;
-
-  if (hasA) updateVideoTexture(texA, sourceA);
-  if (hasB) updateVideoTexture(texB, sourceB);
-
-  gl.useProgram(prog);
-
-  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texA);
-  gl.uniform1i(gl.getUniformLocation(prog,"uA"), 0);
-
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texB);
-  gl.uniform1i(gl.getUniformLocation(prog,"uB"), 1);
-
-  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fbTexPrev);
-  gl.uniform1i(gl.getUniformLocation(prog,"uFB"), 2);
-
-  setUniformsForFx(t, hasA, hasB);
-
-  const w=canvas.width, h=canvas.height;
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, fbFboNext);
-  gl.viewport(0,0,w,h);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0,0,w,h);
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  return {hasA, hasB};
-}
-
 function tick(t){
-  if (!gl){ requestAnimationFrame(tick); return; }
+  // Render when:
+  // - FX mode, OR
+  // - Link self-capture is ON
+  const shouldRender = gl && (currentMode==="fx" || linkSelfFxOn);
+  if (shouldRender){
+    resizeCanvas();
 
-  // FX Capture mode
-  if (currentMode==="fx"){
+    const hasA = !!capStreamA && capVideoA.readyState>=2;
+    const hasB = !!capStreamB && capVideoB.readyState>=2;
+
+    if (hasA) updateVideoTexture(texA, capVideoA);
+    if (hasB) updateVideoTexture(texB, capVideoB);
+
+    gl.useProgram(prog);
+    const w=canvas.width, h=canvas.height;
+
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, texA);
+    gl.uniform1i(gl.getUniformLocation(prog,"uA"), 0);
+
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, texB);
+    gl.uniform1i(gl.getUniformLocation(prog,"uB"), 1);
+
     const prevTex = (ping===0) ? fbTex0 : fbTex1;
     const nextFbo = (ping===0) ? fbFbo1 : fbFbo0;
 
-    const res = renderWebglFrame(t, capVideoA, capVideoB, prevTex, nextFbo);
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, prevTex);
+    gl.uniform1i(gl.getUniformLocation(prog,"uFB"), 2);
+
+    gl.uniform2f(gl.getUniformLocation(prog,"uRes"), w, h);
+    gl.uniform1f(gl.getUniformLocation(prog,"uTime"), t/1000);
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uHasA"), hasA?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uHasB"), hasB?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), $("useAasB").checked ? 1 : 0);
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uBlendMode"), blendModeToInt($("fxBlend").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uBOpacity"), parseFloat($("fxBOpacity").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uInvB"), parseFloat($("fxInvB").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uExposure"), parseFloat($("fxExposure").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uContrast"), parseFloat($("fxContrast").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uSat"), parseFloat($("fxSat").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipH"), $("aFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uAFlipV"), $("aFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uARot"), rotToQ($("aRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uACrop"),
+      parseFloat($("aCx").value), parseFloat($("aCy").value), parseFloat($("aZoom").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipH"), $("bFlipH").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBFlipV"), $("bFlipV").checked?1:0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uBRot"), rotToQ($("bRot").value));
+    gl.uniform3f(gl.getUniformLocation(prog,"uBCrop"),
+      parseFloat($("bCx").value), parseFloat($("bCy").value), parseFloat($("bZoom").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackOn"), $("tFeedback").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbAmt"), parseFloat($("feedbackAmt").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbZoom"), parseFloat($("feedbackZoom").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uFbRot"), parseFloat($("feedbackRot").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoOn"), $("tKaleido").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uKSeg"), parseFloat($("kSeg").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uKAmt"), parseFloat($("kAmt").value));
+    gl.uniform1f(gl.getUniformLocation(prog,"uKSpin"), parseFloat($("kSpin").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uRGBOn"), $("tRGB").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uRGBAmt"), parseFloat($("rgbAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uGlitchOn"), $("tGlitch").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uGlitchAmt"), parseFloat($("glitchAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uPixelOn"), $("tPixel").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uPixSize"), parseFloat($("pixSize").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uScanOn"), $("tScan").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uScanAmt"), parseFloat($("scanAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uVigOn"), $("tVig").checked?1:0);
+    gl.uniform1f(gl.getUniformLocation(prog,"uVigAmt"), parseFloat($("vigAmt").value));
+
+    gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
+    gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, nextFbo);
+    gl.viewport(0,0,w,h);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
     ping = 1-ping;
+    const nowTex = (ping===0) ? fbTex0 : fbTex1;
 
-    // loading overlay
-    updateFxLoadingOverlay();
-  }
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, nowTex);
 
-  // Link Mixer WebGL mode (uses L1->A, L2->B)
-  if (linkWebglEnabled()){
-    const A = linkLayers[0]?.video || null;
-    const B = linkLayers[1]?.video || null;
-
-    // If user requested reset, clear link buffers by re-init at current size
-    if (linkResetFbFlag){
-      initLinkFeedbackTextures(canvas.width, canvas.height);
-      linkResetFbFlag = false;
-    }
-
-    const prevTex = (linkPing===0) ? linkFbTex0 : linkFbTex1;
-    const nextFbo = (linkPing===0) ? linkFbFbo1 : linkFbFbo0;
-
-    // Try render; if videos aren't ready, it will be black
-    renderWebglFrame(t, A, B, prevTex, nextFbo);
-    linkPing = 1-linkPing;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0,0,w,h);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
   requestAnimationFrame(tick);
@@ -2476,6 +2435,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   // Start vibe tick (for kaleido spin)
   requestAnimationFrame(vibeTick);
 
+  // Start WebGL tick
   requestAnimationFrame(tick);
 });
 </script>
