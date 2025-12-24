@@ -1,3 +1,3 @@
 # invidious VJ
 
-https://santismo.github.io/WebVJ/
+https://santismo.github.io/iVJ/
