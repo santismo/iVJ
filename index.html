@@ -8,7 +8,7 @@
     :root{
       --bg:#07080c; --panel:#0f1118; --panel2:#0b0d13;
       --text:#e9edf6; --muted:#9aa3b5; --border:rgba(255,255,255,.12);
-      --accent:#7aa2ff; --radius:16px; --maxw:1280px;
+      --accent:#7aa2ff; --radius:16px; --maxw:1200px;
     }
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
     .wrap{max-width:var(--maxw);margin:16px auto;padding:0 14px;display:grid;gap:12px;}
@@ -42,26 +42,28 @@
       background:#000; isolation:isolate;
     }
     .layersRoot{position:absolute; inset:0; z-index:10;}
-    .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter,transform; mix-blend-mode:normal; opacity:1; overflow:hidden;}
-    .layerInner{position:absolute; inset:0; transform-origin:center center; will-change:transform;}
-    .layer iframe{width:100%;height:100%;border:0;display:block; background:#000;}
+    .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter,transform; mix-blend-mode:normal; opacity:1;}
+    .layer iframe{width:100%;height:100%;border:0;display:block;}
     canvas#fxOut{position:absolute; inset:0; width:100%; height:100%; display:none; z-index:30;}
-    .fxOverlay{
-      position:absolute; inset:0; z-index:40;
-      display:none;
-      background:radial-gradient(1200px 700px at 50% 40%, rgba(122,162,255,.14), rgba(0,0,0,.85));
-      align-items:center; justify-content:center; text-align:center; padding:16px;
+
+    .fxLoading{
+      position:absolute; inset:0; display:none; z-index:40;
+      background:radial-gradient(1200px 700px at 30% 20%, rgba(122,162,255,.18), transparent 60%),
+                 rgba(0,0,0,.65);
+      backdrop-filter: blur(6px);
+      align-items:center; justify-content:center; text-align:center;
+      padding:18px;
     }
-    .fxOverlay .box{
+    .fxLoading .box{
       border:1px solid var(--border);
       background:rgba(0,0,0,.35);
       border-radius:18px;
-      padding:16px 18px;
+      padding:14px 16px;
       max-width:520px;
-      box-shadow:0 0 0 2px rgba(122,162,255,.08) inset;
+      box-shadow: 0 20px 80px rgba(0,0,0,.35);
     }
-    .fxOverlay .big{font-weight:800;letter-spacing:.2px;margin-bottom:6px}
-    .fxOverlay .small{color:var(--muted);font-size:12px;line-height:1.3}
+    .fxLoading .big{font-weight:800;letter-spacing:.3px;margin-bottom:6px}
+    .fxLoading .small{font-size:12px;color:var(--muted);line-height:1.35}
 
     .controls{background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
     .controlsHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap; padding:12px; border-bottom:1px solid var(--border);}
@@ -76,8 +78,9 @@
     .cardBody{padding:12px;display:grid;gap:10px}
     label{display:grid;gap:6px;font-size:12px;color:var(--muted);}
     input[type="text"], select{
-      width:100%; padding:10px; border-radius:12px; border:1px solid var(--border);
-      background:rgba(0,0,0,.30); color:var(--text); font-size:14px; outline:none;
+      width:100%; padding:10px; border-radius:12px;
+      border:1px solid var(--border); background:rgba(0,0,0,.30);
+      color:var(--text); font-size:14px; outline:none;
     }
     input[type="range"]{width:100%;}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -93,45 +96,63 @@
     .layerItemHead .name{font-weight:700;font-size:13px}
     .layerItemBody{padding:12px;display:grid;gap:10px}
 
-    .valRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .val{font-variant-numeric:tabular-nums; font-size:12px; color:var(--text); opacity:.9}
+    .rangeRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .rangeVal{
+      font-size:12px;color:var(--text);
+      border:1px solid var(--border);
+      background:rgba(0,0,0,.30);
+      padding:6px 10px;border-radius:999px;
+      min-width:64px; text-align:right;
+    }
 
-    /* Deck */
-    .deckTabs{display:flex;gap:6px;flex-wrap:wrap}
-    .deckTabs button{padding:7px 10px;font-size:12px}
-    .deckTabs button.active{background:rgba(122,162,255,.18);border-color:rgba(122,162,255,.35)}
-    .deckGrid{
+    .deckTop{display:grid;gap:10px}
+    .deckList{display:grid;gap:12px}
+    .deck{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+    .deckHead{
+      padding:10px 12px;
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .deckName{font-weight:800;font-size:13px}
+    .thumbGrid{
+      padding:12px;
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:10px;
-      max-height:420px;
-      overflow:auto;
-      padding-right:4px;
     }
-    @media (max-width: 980px){.deckGrid{grid-template-columns:repeat(4,1fr)}}
-    @media (max-width: 640px){.deckGrid{grid-template-columns:repeat(3,1fr)}}
+    @media (max-width:980px){.thumbGrid{grid-template-columns:repeat(2,1fr);}}
     .thumb{
       border:1px solid var(--border);
-      border-radius:12px;
+      border-radius:14px;
       overflow:hidden;
-      background:rgba(0,0,0,.25);
+      background:#000;
       cursor:pointer;
-      display:grid;
-      gap:0;
+      position:relative;
     }
-    .thumb img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#000}
-    .thumb .cap{padding:7px 8px;font-size:11px;color:var(--muted);line-height:1.2;max-height:2.5em;overflow:hidden}
-    .deckBar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .thumb img{width:100%;height:auto;display:block;}
+    .thumb .cap{
+      position:absolute;left:0;right:0;bottom:0;
+      padding:6px 8px;
+      font-size:11px;
+      background:linear-gradient(transparent, rgba(0,0,0,.75));
+      color:rgba(255,255,255,.92);
+      text-shadow:0 1px 2px rgba(0,0,0,.6);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
     .pill{
+      display:inline-flex;gap:8px;align-items:center;
+      font-size:12px;color:var(--muted);
       border:1px solid var(--border);
-      border-radius:999px;
-      padding:6px 10px;
+      padding:6px 10px;border-radius:999px;
       background:rgba(255,255,255,.02);
-      font-size:12px;
-      color:var(--muted);
     }
-    .help{font-size:12px;color:var(--muted);line-height:1.25}
-    .hr{height:1px;background:var(--border);margin:6px 0}
   </style>
 </head>
 <body>
@@ -140,8 +161,8 @@
     <div class="title">
       <h1>VJ Mixer</h1>
       <div class="sub">
-        <b>Link Mixer</b> = multiple YouTube embeds (blend + CSS transforms). <b>FX Capture</b> = capture tab/window pixels → real WebGL FX.
-        (Per-source Flip/Rotate fixes upside-down/backwards.)
+        <b>Link Mixer</b> = multiple YouTube links (blend). Includes per-layer crop/zoom + auto-random from decks.
+        <b>FX Capture</b> = capture tab/window pixels → real FX (targeted properly).
       </div>
     </div>
     <div class="actions">
@@ -156,13 +177,12 @@
   <div class="stage" id="stage">
     <div class="layersRoot" id="layersRoot"></div>
     <canvas id="fxOut"></canvas>
-
-    <div class="fxOverlay" id="fxOverlay">
+    <div class="fxLoading" id="fxLoading">
       <div class="box">
-        <div class="big">FX Capture ready</div>
+        <div class="big">FX Capture: waiting for capture…</div>
         <div class="small">
-          Click <b>Capture A</b> (and optionally <b>Capture B</b>) to select a tab/window.<br/>
-          Chrome’s “sharing” banner can’t be hidden (browser security), but fullscreen/theater helps keep it out of the video area.
+          Click <b>Capture A</b> (and optionally <b>Capture B</b>) in Controls.<br/>
+          Chrome will show a “sharing” banner — it can’t be removed by a webpage (browser security UI).
         </div>
       </div>
     </div>
@@ -174,7 +194,7 @@
         <span class="badge" id="modeBadge">Mode: Link Mixer</span>
         <span class="badge" id="status">Status: idle</span>
       </div>
-      <div class="small">Tip: In capture mode, put YouTube in fullscreen/theater for “mostly just video”.</div>
+      <div class="small">Tip: In capture mode, fullscreen/theater helps “mostly just video”.</div>
     </div>
 
     <div class="controlsBody" id="controlsBody">
@@ -191,44 +211,76 @@
               </div>
             </div>
             <div class="cardBody">
-              <label>Tap-through YouTube UI
-                <select id="tapUI">
-                  <option value="off" selected>off (recommended)</option>
-                  <option value="on">on</option>
-                </select>
-              </label>
-
               <div class="row">
-                <label>Deck: click a thumbnail → send to layer
-                  <select id="deckTargetLayer"></select>
+                <label>Tap-through YouTube UI
+                  <select id="tapUI">
+                    <option value="off" selected>off (recommended)</option>
+                    <option value="on">on</option>
+                  </select>
                 </label>
-                <label>Deck filter
-                  <input id="deckFilter" type="text" placeholder="type to filter titles…"/>
+                <label>Loop videos
+                  <select id="loopVideos">
+                    <option value="on" selected>on</option>
+                    <option value="off">off</option>
+                  </select>
                 </label>
               </div>
-
               <div class="layerList" id="layerList"></div>
             </div>
           </div>
 
+          <!-- RIGHT SIDE: Why no FX + DECKS -->
           <div class="card">
-            <div class="cardHead">
-              <div class="cardTitle">Video Deck (your playlists)</div>
-              <div class="deckTabs" id="deckTabs"></div>
-            </div>
+            <div class="cardHead"><div class="cardTitle">Video Decks (playlist thumbnails → send to layers)</div></div>
             <div class="cardBody">
-              <div class="deckBar">
-                <span class="pill" id="deckStatus">Deck: loading…</span>
-                <button id="deckRefresh">Refresh</button>
+              <div class="small">
+                This uses the <b>Invidious</b> playlist API to read playlist items and show thumbnails without YouTube’s CORS/throttling issues. :contentReference[oaicite:3]{index=3}
               </div>
-              <div class="help">
-                This deck is built from the playlist RSS (via a CORS-friendly text proxy). Click any thumbnail to load it into your chosen layer.
+
+              <div class="deckTop">
+                <div class="row">
+                  <label>Send clicked thumbnail to layer
+                    <select id="deckTargetLayer"></select>
+                  </label>
+                  <label>Invidious base (if one fails, swap)
+                    <select id="invBase">
+                      <option value="https://yewtu.be" selected>https://yewtu.be</option>
+                      <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
+                      <option value="https://invidious.nerdvpn.de">https://invidious.nerdvpn.de</option>
+                      <option value="https://inv.perditum.com">https://inv.perditum.com</option>
+                      <option value="https://invidious.f5.si">https://invidious.f5.si</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="row">
+                  <label>Add custom playlist URL
+                    <input id="customPlaylistUrl" type="text" placeholder="Paste playlist URL (…&list=PLxxxx)"/>
+                  </label>
+                  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <button id="addCustomDeck" class="primary">Add Deck</button>
+                    <button id="reloadAllDecks">Reload Decks</button>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <span class="pill" id="deckStatus">Decks: not loaded</span>
+                  <span class="pill">Click a thumbnail → pushes that video to the selected layer</span>
+                </div>
               </div>
-              <div class="hr"></div>
-              <div class="deckGrid" id="deckGrid"></div>
-              <div class="help" style="margin-top:8px">
-                <b>Note:</b> Link Mixer can’t do “real” pixel FX on YouTube (cross-origin). Use FX Capture for trails/kaleido/glitch.
+
+              <div class="deckList" id="deckList"></div>
+
+              <div class="card" style="background:rgba(255,255,255,.01)">
+                <div class="cardHead"><div class="cardTitle">Why no FX in Link Mixer?</div></div>
+                <div class="cardBody">
+                  <div class="small">
+                    YouTube iframes are cross-origin: browsers block pixel access, so real WebGL FX can’t run on them.
+                    Use FX Capture mode for real trails/kaleido/glitch.
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -250,8 +302,7 @@
             </div>
             <div class="cardBody">
               <div class="small">
-                “Auto-fit” matches the crop to the captured source aspect ratio (best possible auto-crop).
-                It can’t detect the exact player area inside the tab UI—fullscreen/theater helps.
+                “Auto-fit” matches crop to the captured source aspect ratio. It can’t detect the exact player area UI inside the tab.
               </div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
@@ -270,10 +321,19 @@
                     </select>
                   </label>
                   <div class="row">
-                    <label>Center X <input id="aCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
-                    <label>Center Y <input id="aCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label class="rangeRow">Center X
+                      <input id="aCx" type="range" min="0" max="1" step="0.001" value="0.5">
+                      <span class="rangeVal" data-for="aCx"></span>
+                    </label>
+                    <label class="rangeRow">Center Y
+                      <input id="aCy" type="range" min="0" max="1" step="0.001" value="0.5">
+                      <span class="rangeVal" data-for="aCy"></span>
+                    </label>
                   </div>
-                  <label>Zoom <input id="aZoom" type="range" min="1" max="6" step="0.01" value="1.75"></label>
+                  <label class="rangeRow">Zoom
+                    <input id="aZoom" type="range" min="1" max="6" step="0.01" value="1.75">
+                    <span class="rangeVal" data-for="aZoom"></span>
+                  </label>
                 </div>
               </div>
 
@@ -293,14 +353,26 @@
                     </select>
                   </label>
                   <div class="row">
-                    <label>Center X <input id="bCx" type="range" min="0" max="1" step="0.001" value="0.5"></label>
-                    <label>Center Y <input id="bCy" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+                    <label class="rangeRow">Center X
+                      <input id="bCx" type="range" min="0" max="1" step="0.001" value="0.5">
+                      <span class="rangeVal" data-for="bCx"></span>
+                    </label>
+                    <label class="rangeRow">Center Y
+                      <input id="bCy" type="range" min="0" max="1" step="0.001" value="0.5">
+                      <span class="rangeVal" data-for="bCy"></span>
+                    </label>
                   </div>
-                  <label>Zoom <input id="bZoom" type="range" min="1" max="6" step="0.01" value="1.75"></label>
+                  <label class="rangeRow">Zoom
+                    <input id="bZoom" type="range" min="1" max="6" step="0.01" value="1.75">
+                    <span class="rangeVal" data-for="bZoom"></span>
+                  </label>
 
                   <div class="row">
                     <label class="toggle"><input id="useAasB" type="checkbox"> If B missing, use A as B</label>
-                    <label>Invert B <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1"></label>
+                    <label class="rangeRow">Invert B
+                      <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="1">
+                      <span class="rangeVal" data-for="fxInvB"></span>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -317,20 +389,32 @@
                     <option value="normal">normal</option>
                   </select>
                 </label>
-                <label>B Opacity <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85"></label>
+                <label class="rangeRow">B Opacity
+                  <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85">
+                  <span class="rangeVal" data-for="fxBOpacity"></span>
+                </label>
               </div>
 
               <div class="row">
-                <label>Exposure <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05"></label>
-                <label>Contrast <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35"></label>
+                <label class="rangeRow">Exposure
+                  <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05">
+                  <span class="rangeVal" data-for="fxExposure"></span>
+                </label>
+                <label class="rangeRow">Contrast
+                  <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35">
+                  <span class="rangeVal" data-for="fxContrast"></span>
+                </label>
               </div>
-              <label>Saturation <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25"></label>
+              <label class="rangeRow">Saturation
+                <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25">
+                <span class="rangeVal" data-for="fxSat"></span>
+              </label>
             </div>
           </div>
 
           <div class="card">
             <div class="cardHead">
-              <div class="cardTitle">FX (targeted + exact values)</div>
+              <div class="cardTitle">FX (choose what they affect) — fixed targeting</div>
               <div class="miniBtns"><button id="fxAllOff">All FX Off</button></div>
             </div>
             <div class="cardBody">
@@ -345,17 +429,19 @@
                   </select>
                 </label>
               </div>
-              <label>
-                <div class="valRow"><span>Amount</span><span class="val" data-valfor="feedbackAmt"></span></div>
-                <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88">
-              </label>
-              <label>
-                <div class="valRow"><span>Zoom</span><span class="val" data-valfor="feedbackZoom"></span></div>
-                <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06">
-              </label>
-              <label>
-                <div class="valRow"><span>Rotate</span><span class="val" data-valfor="feedbackRot"></span></div>
+              <div class="row">
+                <label class="rangeRow">Amount
+                  <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88">
+                  <span class="rangeVal" data-for="feedbackAmt"></span>
+                </label>
+                <label class="rangeRow">Zoom
+                  <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06">
+                  <span class="rangeVal" data-for="feedbackZoom"></span>
+                </label>
+              </div>
+              <label class="rangeRow">Rotate
                 <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12">
+                <span class="rangeVal" data-for="feedbackRot"></span>
               </label>
 
               <div class="row">
@@ -369,17 +455,19 @@
                   </select>
                 </label>
               </div>
-              <label>
-                <div class="valRow"><span>Segments</span><span class="val" data-valfor="kSeg"></span></div>
-                <input id="kSeg" type="range" min="2" max="16" step="1" value="6">
-              </label>
-              <label>
-                <div class="valRow"><span>Amount</span><span class="val" data-valfor="kAmt"></span></div>
-                <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85">
-              </label>
-              <label>
-                <div class="valRow"><span>Spin</span><span class="val" data-valfor="kSpin"></span></div>
+              <div class="row">
+                <label class="rangeRow">Segments
+                  <input id="kSeg" type="range" min="2" max="16" step="1" value="6">
+                  <span class="rangeVal" data-for="kSeg"></span>
+                </label>
+                <label class="rangeRow">Amount
+                  <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85">
+                  <span class="rangeVal" data-for="kAmt"></span>
+                </label>
+              </div>
+              <label class="rangeRow">Spin
                 <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0.35">
+                <span class="rangeVal" data-for="kSpin"></span>
               </label>
 
               <div class="row">
@@ -393,9 +481,9 @@
                   </select>
                 </label>
               </div>
-              <label>
-                <div class="valRow"><span>Amount</span><span class="val" data-valfor="rgbAmt"></span></div>
+              <label class="rangeRow">Amount
                 <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012">
+                <span class="rangeVal" data-for="rgbAmt"></span>
               </label>
 
               <div class="row">
@@ -409,9 +497,9 @@
                   </select>
                 </label>
               </div>
-              <label>
-                <div class="valRow"><span>Amount</span><span class="val" data-valfor="glitchAmt"></span></div>
+              <label class="rangeRow">Amount
                 <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35">
+                <span class="rangeVal" data-for="glitchAmt"></span>
               </label>
 
               <div class="row">
@@ -425,25 +513,29 @@
                   </select>
                 </label>
               </div>
-              <label>
-                <div class="valRow"><span>Size</span><span class="val" data-valfor="pixSize"></span></div>
+              <label class="rangeRow">Size
                 <input id="pixSize" type="range" min="1" max="220" step="1" value="70">
+                <span class="rangeVal" data-for="pixSize"></span>
               </label>
 
               <div class="row">
                 <label class="toggle"><input id="tScan" type="checkbox"> Scanlines</label>
                 <label class="toggle"><input id="tVig" type="checkbox"> Vignette</label>
               </div>
-              <label>
-                <div class="valRow"><span>Scan amount</span><span class="val" data-valfor="scanAmt"></span></div>
-                <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35">
-              </label>
-              <label>
-                <div class="valRow"><span>Vignette amount</span><span class="val" data-valfor="vigAmt"></span></div>
-                <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55">
-              </label>
+              <div class="row">
+                <label class="rangeRow">Scan amount
+                  <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35">
+                  <span class="rangeVal" data-for="scanAmt"></span>
+                </label>
+                <label class="rangeRow">Vignette amount
+                  <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55">
+                  <span class="rangeVal" data-for="vigAmt"></span>
+                </label>
+              </div>
 
-              <div class="small">If capture looks flipped: toggle Flip V / Flip H and Rotate until correct.</div>
+              <div class="small">
+                If the capture looks flipped: toggle Flip V / Flip H and Rotate until correct.
+              </div>
             </div>
           </div>
         </div>
@@ -469,7 +561,7 @@ function setMode(mode){
   $("modeLinks").style.display = mode==="links" ? "block" : "none";
   $("modeFX").style.display = mode==="fx" ? "block" : "none";
   $("status").textContent = "Status: " + (mode==="links" ? "Link Mixer ready" : "FX Capture ready");
-  $("fxOverlay").style.display = (mode==="fx" && !capStreamA && !capStreamB) ? "flex" : "none";
+  updateFxLoadingOverlay();
   resizeCanvas();
 }
 $("tabLinks").addEventListener("click", ()=>setMode("links"));
@@ -484,39 +576,42 @@ controls.classList.remove("open");
 $("btnToggleControls").textContent = "Show Controls";
 
 /* =========================
-   MODE 1: Link Mixer (no real FX)
-   - Adds per-layer CSS Zoom/Pan
-   - Adds playlist random + per-layer auto random timer
-   - Adds Deck thumbnails from playlist feeds
+   Slider numeric readouts
 ========================= */
+function hookRangeReadouts(){
+  document.querySelectorAll('.rangeVal[data-for]').forEach(span=>{
+    const id = span.getAttribute('data-for');
+    const el = $(id);
+    if (!el) return;
+    const fmt = ()=>{
+      let v = el.value;
+      if (el.step && String(el.step).includes('.')) {
+        const dec = (String(el.step).split('.')[1]||'').length;
+        v = Number(el.value).toFixed(Math.min(4, Math.max(0, dec)));
+      }
+      span.textContent = v;
+    };
+    el.addEventListener('input', fmt);
+    fmt();
+  });
+}
 
+/* =========================
+   MODE 1: Link Mixer (no WebGL)
+========================= */
 const DEFAULT_LINKS = [
   "https://www.youtube.com/watch?v=3pxrECZYEAA",
   "https://www.youtube.com/watch?v=dS-MaUk6YBI"
 ];
-
-const PLAYLISTS = [
-  { key:"trippy",    name:"Trippy visuals", listId:"PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2" },
-  { key:"cartoons",  name:"Cartoons",      listId:"PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3" },
-  { key:"ads",       name:"Old commercials",listId:"PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu" },
-];
-
-/* A small trick: YouTube RSS often has no CORS, so we fetch through a text proxy */
-function rssProxyUrl(listId){
-  // r.jina.ai returns the remote content as plain text without browser CORS blocks
-  return `https://r.jina.ai/https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(listId)}`;
-}
-
 const BLENDS = [
   "normal","multiply","screen","overlay","darken","lighten","color-dodge","color-burn",
   "hard-light","soft-light","difference","exclusion","hue","saturation","color","luminosity"
 ];
 
 let linkLayerCount = 2;
-const linkLayers = []; // {el, inner, iframe, ui, url, timers}
-const playlistCache = new Map(); // key -> {items:[{id,title}], ts}
+const linkLayers = []; // {el, ui, url, auto:{on,ms,deckKey}, timers}
+let layerAutoTimers = new Map();
 
-/* Embed helper */
 function extractVideoId(url){
   if (!url) return null;
   const raw = url.trim();
@@ -530,12 +625,13 @@ function extractVideoId(url){
   return null;
 }
 
-/* NOTE: This uses the normal youtube embed (not nocookie) because in practice
-   it's less likely to trip “bot-ish” behavior than constantly reloading the nocookie embed.
-   Also: we keep reloads user-driven or timer-driven, not spammy. */
 function buildEmbedSrc(videoId){
-  // loop the single video by using playlist=VIDEOID
-  return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&loop=1&playlist=${videoId}`;
+  const origin = encodeURIComponent(location.origin);
+  const loopOn = $("loopVideos").value === "on";
+  // YouTube embed "loop" requires playlist=VIDEO_ID
+  const loopPart = loopOn ? `&loop=1&playlist=${videoId}` : "";
+  // Using youtube.com/embed tends to behave more "normal" than some alternate embed hosts.
+  return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&origin=${origin}${loopPart}`;
 }
 
 function fillBlendOptions(sel, def="difference"){
@@ -547,11 +643,8 @@ function makeLinkLayer(i){
   const el = document.createElement("div");
   el.className = "layer";
   el.style.zIndex = String(10 + i);
-  const inner = document.createElement("div");
-  inner.className = "layerInner";
-  el.appendChild(inner);
   $("layersRoot").appendChild(el);
-  return {el, inner};
+  return el;
 }
 
 function applyLinkStyle(i){
@@ -561,140 +654,38 @@ function applyLinkStyle(i){
   L.el.style.pointerEvents = tap ? "auto" : "none";
   L.el.style.opacity = L.ui.op;
   L.el.style.mixBlendMode = L.ui.blend;
-
-  // CSS-only “FX” for link mixer (safe): filter + transforms
+  // crop/zoom: transform the iframe element via CSS
+  const z = Math.max(1, L.ui.zoom || 1);
+  const cx = (L.ui.cx ?? 0.5);
+  const cy = (L.ui.cy ?? 0.5);
+  // Translate so the chosen center stays centered after scaling.
+  const tx = (0.5 - cx) * 100;
+  const ty = (0.5 - cy) * 100;
+  L.el.style.transformOrigin = `${cx*100}% ${cy*100}%`;
+  L.el.style.transform = `translate(${tx}%, ${ty}%) scale(${z})`;
   L.el.style.filter = `invert(${L.ui.inv}) contrast(${L.ui.ct}) saturate(${L.ui.sat}) hue-rotate(${L.ui.hue}deg)`;
-
-  // Zoom + pan (CSS transform). Pan is in normalized 0..1 around center.
-  const z = Math.max(1, L.ui.zoom);
-  const px = (L.ui.cx - 0.5) * -100; // invert so moving slider right reveals right
-  const py = (L.ui.cy - 0.5) * -100;
-  // scale then translate slightly; translate is smaller at low zoom, bigger at high zoom
-  const panScale = (z - 1) * 1.2; // “feel” factor
-  L.inner.style.transform = `translate(${px*panScale}%, ${py*panScale}%) scale(${z})`;
 }
 
 function mountLinkIframe(i){
   const L = linkLayers[i];
   const vid = extractVideoId(L.url);
-  if (!vid){ L.inner.innerHTML=""; return; }
+  if (!vid){ L.el.innerHTML=""; return; }
   const src = buildEmbedSrc(vid);
-
-  // Keep a stable iframe element when possible (reduces “bot-ish” thrash)
-  if (!L.iframe){
-    const ifr = document.createElement("iframe");
-    ifr.allow = "autoplay; encrypted-media; picture-in-picture";
-    ifr.referrerPolicy = "origin-when-cross-origin";
-    ifr.src = src;
-    L.iframe = ifr;
-    L.inner.innerHTML = "";
-    L.inner.appendChild(ifr);
-  } else {
-    // only update src if changed
-    if (L.iframe.src !== src) L.iframe.src = src;
-  }
+  L.el.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
 }
 
-function pickRandomFrom(items){
-  if (!items || !items.length) return null;
-  return items[Math.floor(Math.random()*items.length)];
-}
-
-async function loadPlaylistItems(plKey){
-  const pl = PLAYLISTS.find(p=>p.key===plKey);
-  if (!pl) return {items:[], err:"unknown playlist"};
-  const cached = playlistCache.get(plKey);
-  if (cached && cached.items && cached.items.length) return cached;
-
-  $("deckStatus").textContent = "Deck: loading…";
-  try{
-    const url = rssProxyUrl(pl.listId);
-    const txt = await (await fetch(url, {cache:"no-store"})).text();
-
-    // Parse: entries contain <yt:videoId>VIDEO</yt:videoId> and <title>...</title>
-    const items = [];
-    const entryRe = /<entry>[\s\S]*?<\/entry>/g;
-    const vidRe = /<yt:videoId>([^<]+)<\/yt:videoId>/;
-    const titleRe = /<title>([^<]+)<\/title>/;
-
-    const entries = txt.match(entryRe) || [];
-    for (const e of entries){
-      const m1 = e.match(vidRe);
-      if (!m1) continue;
-      const id = (m1[1]||"").trim();
-      if (!/^[a-zA-Z0-9_-]{11}$/.test(id)) continue;
-
-      const m2 = e.match(titleRe);
-      const title = (m2 ? m2[1] : id).trim();
-      items.push({id, title});
-    }
-
-    // De-dupe just in case
-    const seen = new Set();
-    const uniq = items.filter(it=>{
-      if (seen.has(it.id)) return false;
-      seen.add(it.id);
-      return true;
-    });
-
-    const data = {items: uniq, ts: Date.now()};
-    playlistCache.set(plKey, data);
-    return data;
-  }catch(err){
-    return {items:[], err:String(err)};
-  }finally{
-    updateDeckStatus();
-  }
-}
-
-/* Per-layer random */
-async function setLayerFromPlaylistRandom(i, plKey){
-  const L = linkLayers[i];
-  if (!L) return;
-  const data = await loadPlaylistItems(plKey);
-  if (!data.items.length){
-    $("status").textContent = `Status: deck failed (${plKey})`;
-    return;
-  }
-  const it = pickRandomFrom(data.items);
-  if (!it) return;
-  L.url = `https://www.youtube.com/watch?v=${it.id}`;
-  mountLinkIframe(i);
-  applyLinkStyle(i);
-  rebuildLinkUI(false);
-  $("status").textContent = `Status: Layer ${i+1} ← random (${plKey})`;
-}
-
-function stopLayerAuto(i){
-  const L = linkLayers[i];
-  if (!L) return;
-  if (L.autoTimer) clearInterval(L.autoTimer);
-  L.autoTimer = null;
-}
-function startLayerAuto(i){
-  const L = linkLayers[i];
-  if (!L) return;
-  stopLayerAuto(i);
-  const ms = Math.max(5, parseInt(L.ui.autoSec,10)||30) * 1000;
-  if (!L.ui.autoOn) return;
-  L.autoTimer = setInterval(()=>{
-    if (L.ui.randMode === "off") return;
-    setLayerFromPlaylistRandom(i, L.ui.randMode);
-  }, ms);
-}
-
-function rebuildLayerSelect(){
+function updateDeckTargetLayerOptions(){
   const sel = $("deckTargetLayer");
   sel.innerHTML = "";
   for (let i=0;i<linkLayerCount;i++){
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = `Layer ${i+1}`;
-    sel.appendChild(opt);
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = `Layer ${i+1}`;
+    sel.appendChild(o);
   }
 }
 
-function rebuildLinkUI(rebuildDeckTarget=true){
+function rebuildLinkUI(){
   const list = $("layerList");
   list.innerHTML = "";
   for (let i=0;i<linkLayerCount;i++){
@@ -705,7 +696,7 @@ function rebuildLinkUI(rebuildDeckTarget=true){
         <div class="name">Layer ${i+1}</div>
         <div class="miniBtns">
           <button data-act="apply" data-i="${i}">Apply</button>
-          <button data-act="rand" data-i="${i}">Random Now</button>
+          <button data-act="pickRandom" data-i="${i}">Random Now</button>
         </div>
       </div>
       <div class="layerItemBody">
@@ -726,116 +717,96 @@ function rebuildLinkUI(rebuildDeckTarget=true){
         </div>
 
         <div class="card" style="background:rgba(255,255,255,.01)">
-          <div class="cardHead"><div class="cardTitle">Crop / Zoom (CSS)</div></div>
+          <div class="cardHead"><div class="cardTitle">Crop / Zoom</div></div>
           <div class="cardBody">
             <div class="row">
               <label>Center X <input type="range" min="0" max="1" step="0.001" data-f="cx" data-i="${i}"/></label>
               <label>Center Y <input type="range" min="0" max="1" step="0.001" data-f="cy" data-i="${i}"/></label>
             </div>
-            <label>Zoom <input type="range" min="1" max="4" step="0.01" data-f="zoom" data-i="${i}"/></label>
+            <label>Zoom <input type="range" min="1" max="5" step="0.01" data-f="zoom" data-i="${i}"/></label>
           </div>
         </div>
 
         <div class="card" style="background:rgba(255,255,255,.01)">
-          <div class="cardHead"><div class="cardTitle">Random Mode + Auto Timer</div></div>
+          <div class="cardHead"><div class="cardTitle">Auto Random</div></div>
           <div class="cardBody">
             <div class="row">
-              <label>Random source
-                <select data-f="randMode" data-i="${i}">
-                  <option value="off">off</option>
-                  <option value="trippy">Trippy visuals</option>
-                  <option value="cartoons">Cartoons</option>
-                  <option value="ads">Old commercials</option>
-                </select>
+              <label class="toggle"><input type="checkbox" data-f="autoOn" data-i="${i}"> Enable</label>
+              <label>From Deck
+                <select data-f="autoDeck" data-i="${i}"></select>
               </label>
-              <label class="toggle"><input type="checkbox" data-f="autoOn" data-i="${i}"> Auto-random</label>
             </div>
-            <label>Auto interval (seconds)
+            <label>Timer (seconds)
               <input type="range" min="5" max="600" step="1" data-f="autoSec" data-i="${i}"/>
             </label>
-            <div class="small">Tip: enable Auto-random, then it will pick a new random video from that playlist every N seconds.</div>
+            <div class="small">If a deck has 0 items, load decks first (right side).</div>
           </div>
         </div>
+
       </div>
     `;
     list.appendChild(item);
 
     const L = linkLayers[i];
     item.querySelector(`[data-f="url"][data-i="${i}"]`).value = L.url;
-
     item.querySelector(`[data-f="op"][data-i="${i}"]`).value = L.ui.op;
     item.querySelector(`[data-f="inv"][data-i="${i}"]`).value = L.ui.inv;
     item.querySelector(`[data-f="ct"][data-i="${i}"]`).value = L.ui.ct;
     item.querySelector(`[data-f="sat"][data-i="${i}"]`).value = L.ui.sat;
     item.querySelector(`[data-f="hue"][data-i="${i}"]`).value = L.ui.hue;
 
-    item.querySelector(`[data-f="cx"][data-i="${i}"]`).value = L.ui.cx;
-    item.querySelector(`[data-f="cy"][data-i="${i}"]`).value = L.ui.cy;
-    item.querySelector(`[data-f="zoom"][data-i="${i}"]`).value = L.ui.zoom;
-
-    item.querySelector(`[data-f="randMode"][data-i="${i}"]`).value = L.ui.randMode;
-    item.querySelector(`[data-f="autoOn"][data-i="${i}"]`).checked = !!L.ui.autoOn;
-    item.querySelector(`[data-f="autoSec"][data-i="${i}"]`).value = L.ui.autoSec;
+    item.querySelector(`[data-f="cx"][data-i="${i}"]`).value = L.ui.cx ?? 0.5;
+    item.querySelector(`[data-f="cy"][data-i="${i}"]`).value = L.ui.cy ?? 0.5;
+    item.querySelector(`[data-f="zoom"][data-i="${i}"]`).value = L.ui.zoom ?? 1;
 
     const sel = item.querySelector(`select[data-f="blend"][data-i="${i}"]`);
     fillBlendOptions(sel, L.ui.blend);
+
+    // Auto random controls
+    item.querySelector(`[data-f="autoOn"][data-i="${i}"]`).checked = !!L.auto.on;
+    item.querySelector(`[data-f="autoSec"][data-i="${i}"]`).value = Math.round((L.auto.ms||30000)/1000);
+
+    const deckSel = item.querySelector(`select[data-f="autoDeck"][data-i="${i}"]`);
+    deckSel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
+    deckSel.value = L.auto.deckKey || DEFAULT_DECK_KEY;
   }
 
-  if (rebuildDeckTarget) rebuildLayerSelect();
+  updateDeckTargetLayerOptions();
 }
 
 function rebuildLinkLayers(){
-  // clear timers
-  for (const L of linkLayers) stopLayerAuto(linkLayers.indexOf(L));
-
   $("layersRoot").innerHTML="";
   linkLayers.length=0;
-
   for (let i=0;i<linkLayerCount;i++){
-    const made = makeLinkLayer(i);
+    const el = makeLinkLayer(i);
     linkLayers.push({
-      el: made.el,
-      inner: made.inner,
-      iframe: null,
+      el,
       url: DEFAULT_LINKS[i] || DEFAULT_LINKS[1],
       ui: {
-        op: i===0?1:0.85,
-        blend: i===0?"normal":"difference",
-        inv: i===0?0:1,
-        ct: i===0?1:1.6,
-        sat: i===0?1:1.2,
-        hue: 0,
-
-        // CSS crop/zoom defaults
-        cx: 0.5,
-        cy: 0.5,
-        zoom: 1.0,
-
-        // Random defaults
-        randMode: "off",
-        autoOn: false,
-        autoSec: 30
+        op:i===0?1:0.85,
+        blend:i===0?"normal":"difference",
+        inv:i===0?0:1,
+        ct:i===0?1:1.6,
+        sat:i===0?1:1.2,
+        hue:0,
+        cx:0.5, cy:0.5, zoom:1
       },
-      autoTimer: null
+      auto: { on:false, ms:30000, deckKey: DEFAULT_DECK_KEY }
     });
     mountLinkIframe(i);
     applyLinkStyle(i);
   }
-
-  rebuildLinkUI(true);
-  rebuildDeckTabs();
-  setDeckTab(PLAYLISTS[0].key);
+  rebuildLinkUI();
+  stopAllLayerAuto();
+  // rebuild UI after stopping timers so checkboxes remain consistent
+  rebuildLinkUI();
 }
 
 $("addLayer").addEventListener("click", ()=>{ if (linkLayerCount<5){ linkLayerCount++; rebuildLinkLayers(); }});
 $("removeLayer").addEventListener("click", ()=>{ if (linkLayerCount>2){ linkLayerCount--; rebuildLinkLayers(); }});
-$("reloadLinks").addEventListener("click", ()=>{
-  for (let i=0;i<linkLayerCount;i++){
-    mountLinkIframe(i);
-    applyLinkStyle(i);
-  }
-});
+$("reloadLinks").addEventListener("click", ()=>{ for (let i=0;i<linkLayerCount;i++){ mountLinkIframe(i); applyLinkStyle(i);} });
 $("tapUI").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i); });
+$("loopVideos").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) mountLinkIframe(i); });
 
 $("layerList").addEventListener("input", (e)=>{
   const t=e.target;
@@ -856,147 +827,275 @@ $("layerList").addEventListener("input", (e)=>{
   if (f==="cy") L.ui.cy=parseFloat(t.value);
   if (f==="zoom") L.ui.zoom=parseFloat(t.value);
 
-  if (f==="randMode") L.ui.randMode=t.value;
-  if (f==="autoOn") L.ui.autoOn=!!t.checked;
-  if (f==="autoSec") L.ui.autoSec=parseInt(t.value,10)||30;
+  if (f==="autoOn") {
+    L.auto.on = t.checked;
+    syncLayerAuto(i);
+  }
+  if (f==="autoSec") {
+    L.auto.ms = Math.max(5000, parseInt(t.value,10)*1000);
+    syncLayerAuto(i);
+  }
+  if (f==="autoDeck") {
+    L.auto.deckKey = t.value;
+    syncLayerAuto(i);
+  }
 
   applyLinkStyle(i);
-
-  // timer changes
-  if (f==="randMode" || f==="autoOn" || f==="autoSec"){
-    startLayerAuto(i);
-  }
 });
 
 $("layerList").addEventListener("click", (e)=>{
   const btn=e.target.closest("button[data-act]");
   if (!btn) return;
   const i=parseInt(btn.getAttribute("data-i"),10);
-  const act=btn.getAttribute("data-act");
-  if (Number.isNaN(i)) return;
-
+  const act = btn.getAttribute("data-act");
   if (act==="apply"){
     mountLinkIframe(i);
     applyLinkStyle(i);
-    startLayerAuto(i);
-  } else if (act==="rand"){
-    const mode = linkLayers[i]?.ui?.randMode || "off";
-    if (mode==="off"){
-      $("status").textContent = `Status: Layer ${i+1} random is off`;
-      return;
-    }
-    setLayerFromPlaylistRandom(i, mode);
+  }
+  if (act==="pickRandom"){
+    pickRandomIntoLayer(i);
   }
 });
 
 /* =========================
-   Deck UI (thumbnails)
+   Video Decks (playlists → thumbnails)
 ========================= */
-let deckActiveKey = PLAYLISTS[0].key;
+// Uses Invidious: https://docs.invidious.io/api/  + instances list: https://docs.invidious.io/instances/  :contentReference[oaicite:4]{index=4}
 
-function rebuildDeckTabs(){
-  const tabs = $("deckTabs");
-  tabs.innerHTML = "";
-  for (const p of PLAYLISTS){
-    const b = document.createElement("button");
-    b.textContent = p.name;
-    b.dataset.key = p.key;
-    b.className = (p.key===deckActiveKey) ? "active" : "";
-    b.addEventListener("click", ()=>setDeckTab(p.key));
-    tabs.appendChild(b);
-  }
+const DEFAULT_DECKS = [
+  { key:"trippy", name:"Trippy Visuals", url:"https://www.youtube.com/watch?v=sLkwdr74FVI&list=PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2" },
+  { key:"cartoons", name:"Old Cartoons", url:"https://www.youtube.com/watch?v=2lBjRpRtQjY&list=PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3" },
+  { key:"commercials", name:"Old Commercials", url:"https://www.youtube.com/watch?v=0tJ_KhgI4TY&list=PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu" }
+];
+
+const decks = {}; // key -> {name,url,listId,items:[{videoId,title,thumb}]}
+let DEFAULT_DECK_KEY = "trippy";
+
+function getInvidiousBase(){
+  return $("invBase").value || "https://yewtu.be";
 }
 
-function updateDeckStatus(){
-  const cached = playlistCache.get(deckActiveKey);
-  if (!cached || !cached.items || !cached.items.length){
-    $("deckStatus").textContent = "Deck: empty (try Refresh)";
-    return;
-  }
-  $("deckStatus").textContent = `Deck: ${cached.items.length} videos loaded`;
+function extractPlaylistId(anyUrl){
+  if (!anyUrl) return null;
+  const raw = anyUrl.trim();
+  try{
+    const u = new URL(raw);
+    const list = u.searchParams.get("list");
+    if (list) return list;
+    // accept playlist?list=...
+    if (u.pathname.includes("/playlist")) return u.searchParams.get("list");
+  }catch(e){}
+  // allow direct PLxxxx
+  if (/^PL[a-zA-Z0-9_-]{10,}$/.test(raw)) return raw;
+  return null;
 }
 
-function thumbUrl(videoId){
+async function fetchPlaylistAllVideos(listId){
+  // Invidious endpoint supports pagination with ?page=
+  // /api/v1/playlists/:plid :contentReference[oaicite:5]{index=5}
+  const base = getInvidiousBase().replace(/\/+$/,'');
+  const out = [];
+  for (let page=1; page<=25; page++){
+    const url = `${base}/api/v1/playlists/${encodeURIComponent(listId)}?page=${page}`;
+    const r = await fetch(url, { mode:"cors" });
+    if (!r.ok) break;
+    const j = await r.json();
+    const vids = Array.isArray(j.videos) ? j.videos : [];
+    if (!vids.length) break;
+    for (const v of vids){
+      const vid = v.videoId || v.video_id || v.id;
+      if (!vid) continue;
+      out.push({
+        videoId: vid,
+        title: v.title || "",
+        thumb: (v.videoThumbnails && v.videoThumbnails[0] && v.videoThumbnails[0].url) ? v.videoThumbnails[0].url : `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`
+      });
+    }
+    // some instances return exactly 100 per page; keep going until empty
+  }
+  // de-dupe
+  const seen = new Set();
+  return out.filter(x=> (seen.has(x.videoId) ? false : (seen.add(x.videoId), true)));
+}
+
+function deckThumbUrl(videoId){
   return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }
 
-async function setDeckTab(key){
-  deckActiveKey = key;
-  rebuildDeckTabs();
-  await ensureDeckLoaded();
-  renderDeck();
-}
-
-async function ensureDeckLoaded(){
-  const cached = playlistCache.get(deckActiveKey);
-  if (cached && cached.items && cached.items.length) return;
-  $("deckStatus").textContent = "Deck: loading…";
-  const data = await loadPlaylistItems(deckActiveKey);
-  if (!data.items.length){
-    $("deckStatus").textContent = "Deck: failed (Refresh)";
+async function loadDeck(key){
+  const D = decks[key];
+  if (!D || !D.listId) return;
+  $("deckStatus").textContent = `Decks: loading "${D.name}"…`;
+  try{
+    const items = await fetchPlaylistAllVideos(D.listId);
+    D.items = items.map(it=>({
+      videoId: it.videoId,
+      title: it.title || it.videoId,
+      thumb: it.thumb || deckThumbUrl(it.videoId)
+    }));
+    $("deckStatus").textContent = `Decks: loaded "${D.name}" (${D.items.length} videos)`;
+  }catch(e){
+    console.error(e);
+    $("deckStatus").textContent = `Decks: failed "${D.name}" — try another Invidious base`;
+    D.items = [];
   }
 }
 
-function renderDeck(){
-  updateDeckStatus();
-  const grid = $("deckGrid");
-  grid.innerHTML = "";
+function renderDecks(){
+  const wrap = $("deckList");
+  wrap.innerHTML = "";
+  Object.keys(decks).forEach(key=>{
+    const D = decks[key];
+    const el = document.createElement("div");
+    el.className = "deck";
+    el.innerHTML = `
+      <div class="deckHead">
+        <div class="deckName">${D.name}</div>
+        <div class="miniBtns">
+          <button data-act="reloadDeck" data-k="${key}">Load</button>
+          <button data-act="setDefault" data-k="${key}">Use for Auto-Random default</button>
+        </div>
+      </div>
+      <div class="thumbGrid" id="thumbGrid_${key}">
+        <div class="small" style="grid-column:1/-1;">${D.items?.length ? "" : "Not loaded yet — click Load."}</div>
+      </div>
+    `;
+    wrap.appendChild(el);
 
-  const cached = playlistCache.get(deckActiveKey);
-  const items = (cached && cached.items) ? cached.items : [];
-  const q = ($("deckFilter").value||"").trim().toLowerCase();
+    const grid = el.querySelector(`#thumbGrid_${key}`);
+    if (Array.isArray(D.items) && D.items.length){
+      grid.innerHTML = "";
+      // show first 24 thumbs for performance (random still uses full list)
+      const show = D.items.slice(0, 24);
+      for (const it of show){
+        const t = document.createElement("div");
+        t.className = "thumb";
+        t.innerHTML = `<img loading="lazy" src="${it.thumb}" alt=""><div class="cap">${it.title || it.videoId}</div>`;
+        t.addEventListener("click", ()=>pushVideoToLayer(it.videoId));
+        grid.appendChild(t);
+      }
+      if (D.items.length > show.length){
+        const more = document.createElement("div");
+        more.className = "small";
+        more.style.gridColumn = "1/-1";
+        more.textContent = `Showing ${show.length} thumbnails (deck contains ${D.items.length}). Random uses the full list.`;
+        grid.appendChild(more);
+      }
+    }
+  });
 
-  const filtered = q
-    ? items.filter(it => (it.title||"").toLowerCase().includes(q) || it.id.includes(q))
-    : items;
-
-  // keep it performant
-  const show = filtered.slice(0, 120);
-
-  for (const it of show){
-    const d = document.createElement("div");
-    d.className = "thumb";
-    d.title = it.title;
-
-    const img = document.createElement("img");
-    img.loading = "lazy";
-    img.src = thumbUrl(it.id);
-
-    const cap = document.createElement("div");
-    cap.className = "cap";
-    cap.textContent = it.title || it.id;
-
-    d.appendChild(img);
-    d.appendChild(cap);
-
-    d.addEventListener("click", ()=>{
-      const idx = parseInt($("deckTargetLayer").value, 10) || 0;
-      const L = linkLayers[idx];
-      if (!L) return;
-      L.url = `https://www.youtube.com/watch?v=${it.id}`;
-      mountLinkIframe(idx);
-      applyLinkStyle(idx);
-      rebuildLinkUI(false);
-      $("status").textContent = `Status: Layer ${idx+1} ← deck (${deckActiveKey})`;
-    });
-
-    grid.appendChild(d);
-  }
-
-  if (!show.length){
-    const empty = document.createElement("div");
-    empty.className = "small";
-    empty.textContent = "No matches.";
-    grid.appendChild(empty);
-  }
+  // keep auto deck selects updated
+  rebuildLinkUI();
 }
 
-$("deckFilter").addEventListener("input", renderDeck);
-$("deckRefresh").addEventListener("click", async ()=>{
-  playlistCache.delete(deckActiveKey);
-  $("deckStatus").textContent = "Deck: refreshing…";
-  await ensureDeckLoaded();
-  renderDeck();
+function pushVideoToLayer(videoId){
+  const i = parseInt($("deckTargetLayer").value, 10) || 0;
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  linkLayers[i].url = url;
+  // reflect in input UI
+  const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
+  if (inp) inp.value = url;
+  mountLinkIframe(i);
+  applyLinkStyle(i);
+  $("status").textContent = `Status: deck → Layer ${i+1}`;
+}
+
+function pickRandomFromDeck(key){
+  const D = decks[key];
+  if (!D || !Array.isArray(D.items) || !D.items.length) return null;
+  const idx = Math.floor(Math.random() * D.items.length);
+  return D.items[idx].videoId;
+}
+
+function pickRandomIntoLayer(i){
+  const L = linkLayers[i];
+  const deckKey = L.auto.deckKey || DEFAULT_DECK_KEY;
+  const vid = pickRandomFromDeck(deckKey);
+  if (!vid){
+    $("status").textContent = `Status: deck "${decks[deckKey]?.name||deckKey}" not loaded`;
+    return;
+  }
+  pushVideoToLayer(vid);
+}
+
+function stopAllLayerAuto(){
+  for (const [i, timer] of layerAutoTimers.entries()){
+    clearInterval(timer);
+  }
+  layerAutoTimers.clear();
+}
+
+function syncLayerAuto(i){
+  const L = linkLayers[i];
+  if (!L) return;
+  // clear existing
+  if (layerAutoTimers.has(i)){
+    clearInterval(layerAutoTimers.get(i));
+    layerAutoTimers.delete(i);
+  }
+  if (!L.auto.on) return;
+  const ms = Math.max(5000, L.auto.ms || 30000);
+  const timer = setInterval(()=>pickRandomIntoLayer(i), ms);
+  layerAutoTimers.set(i, timer);
+}
+
+function addDeck(key, name, url){
+  const listId = extractPlaylistId(url);
+  if (!listId){
+    $("deckStatus").textContent = "Decks: invalid playlist URL (missing list=PL...)";
+    return false;
+  }
+  decks[key] = { key, name, url, listId, items: [] };
+  return true;
+}
+
+function initDefaultDecks(){
+  DEFAULT_DECKS.forEach(d=>addDeck(d.key, d.name, d.url));
+}
+
+$("deckList").addEventListener("click", async (e)=>{
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const act = b.getAttribute("data-act");
+  const k = b.getAttribute("data-k");
+  if (act==="reloadDeck"){
+    await loadDeck(k);
+    renderDecks();
+  }
+  if (act==="setDefault"){
+    DEFAULT_DECK_KEY = k;
+    $("deckStatus").textContent = `Decks: default auto-random = "${decks[k].name}"`;
+    // update selects to reflect default, but don't override per-layer choice
+    rebuildLinkUI();
+  }
+});
+
+$("addCustomDeck").addEventListener("click", async ()=>{
+  const url = $("customPlaylistUrl").value.trim();
+  if (!url) return;
+  const listId = extractPlaylistId(url);
+  if (!listId){
+    $("deckStatus").textContent = "Decks: invalid playlist URL (needs list=...)";
+    return;
+  }
+  const key = "custom_" + Math.random().toString(16).slice(2,8);
+  addDeck(key, "Custom Deck", url);
+  await loadDeck(key);
+  renderDecks();
+  $("customPlaylistUrl").value = "";
+});
+
+$("reloadAllDecks").addEventListener("click", async ()=>{
+  $("deckStatus").textContent = "Decks: loading all…";
+  for (const k of Object.keys(decks)){
+    await loadDeck(k);
+  }
+  renderDecks();
+  $("deckStatus").textContent = "Decks: loaded all";
+});
+
+$("invBase").addEventListener("change", ()=>{
+  $("deckStatus").textContent = "Decks: switched Invidious base (reload decks)";
 });
 
 /* =========================
@@ -1008,6 +1107,11 @@ const capVideoB=document.createElement("video");
 capVideoA.muted=true; capVideoB.muted=true;
 capVideoA.playsInline=true; capVideoB.playsInline=true;
 
+function updateFxLoadingOverlay(){
+  const on = (currentMode==="fx") && (!capStreamA && !capStreamB);
+  $("fxLoading").style.display = on ? "flex" : "none";
+}
+
 async function startCapture(which){
   try{
     const stream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:60 }, audio:false });
@@ -1015,9 +1119,10 @@ async function startCapture(which){
     else { capStreamB=stream; capVideoB.srcObject=stream; await capVideoB.play(); }
     $("status").textContent = `Status: captured ${which}`;
     setMode("fx");
-    $("fxOverlay").style.display = (!capStreamA && !capStreamB) ? "flex" : "none";
   }catch(e){
     $("status").textContent = `Status: capture ${which} canceled/blocked`;
+  }finally{
+    updateFxLoadingOverlay();
   }
 }
 function stopCaptureAll(){
@@ -1028,7 +1133,7 @@ function stopCaptureAll(){
   capStreamA=null; capStreamB=null;
   capVideoA.srcObject=null; capVideoB.srcObject=null;
   $("status").textContent="Status: capture stopped";
-  $("fxOverlay").style.display = (currentMode==="fx") ? "flex" : "none";
+  updateFxLoadingOverlay();
 }
 $("capA").addEventListener("click", ()=>startCapture("A"));
 $("capB").addEventListener("click", ()=>startCapture("B"));
@@ -1047,18 +1152,19 @@ function autoFit(which){
     return;
   }
   const srcAR = v.videoWidth / v.videoHeight;
-  const outAR = 16/9; // stage is 16:9
+  const outAR = 16/9;
   let z = 1.0;
   if (srcAR > outAR) z = srcAR / outAR; else z = outAR / srcAR;
   if (which==="A") $("aZoom").value = z.toFixed(2);
   else $("bZoom").value = z.toFixed(2);
   $("status").textContent = `Status: auto-fit ${which} (zoom=${z.toFixed(2)})`;
+  hookRangeReadouts();
 }
 $("fitA").addEventListener("click", ()=>autoFit("A"));
 $("fitB").addEventListener("click", ()=>autoFit("B"));
 
 /* =========================
-   WebGL pipeline (targeted FX fixed)
+   WebGL pipeline (fixed stage targeting)
 ========================= */
 const canvas=$("fxOut");
 let gl=null, prog=null, quadVBO=null;
@@ -1112,6 +1218,7 @@ uniform int uUseAasB;
 uniform int uBlendMode;
 uniform float uBOpacity;
 uniform float uInvB;
+
 uniform float uExposure;
 uniform float uContrast;
 uniform float uSat;
@@ -1164,13 +1271,13 @@ vec2 rot2(vec2 p,float a){
   return mat2(c,-s,s,c)*p;
 }
 vec3 blend(vec3 a, vec3 b, int mode){
-  if (mode==0) return b;                          // normal
-  if (mode==1) return a*b;                        // multiply
-  if (mode==2) return 1.0-(1.0-a)*(1.0-b);        // screen
-  if (mode==3) return abs(a-b);                   // difference
-  if (mode==4) return a+b;                        // add
-  if (mode==5) return mix(2.0*a*b, 1.0-2.0*(1.0-a)*(1.0-b), step(0.5,a)); // overlay-ish
-  if (mode==6) return a + b - 2.0*a*b;            // exclusion-ish
+  if (mode==0) return b;
+  if (mode==1) return a*b;
+  if (mode==2) return 1.0-(1.0-a)*(1.0-b);
+  if (mode==3) return abs(a-b);
+  if (mode==4) return a+b;
+  if (mode==5) return mix(2.0*a*b, 1.0-2.0*(1.0-a)*(1.0-b), step(0.5,a));
+  if (mode==6) return a + b - 2.0*a*b;
   return b;
 }
 float hash(vec2 p){
@@ -1215,12 +1322,18 @@ vec3 sampleB(vec2 uv){
   return vec3(0.0);
 }
 
-vec3 computeMix(vec2 uv){
-  vec3 A = sampleA(uv);
-  vec3 B = sampleB(uv);
-  B = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
-  vec3 mixedB = blend(A,B,uBlendMode);
-  return mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
+vec3 rgbShiftFromSampler(int which, vec2 uv){
+  float amt = uRGBAmt;
+  vec2 off = vec2(amt, 0.0);
+  vec3 c0 = (which==0) ? sampleA(uv) : sampleB(uv);
+  vec3 cR = (which==0) ? sampleA(uv+off) : sampleB(uv+off);
+  vec3 cB = (which==0) ? sampleA(uv-off) : sampleB(uv-off);
+  return vec3(cR.r, c0.g, cB.b);
+}
+
+vec2 pixelateUv(vec2 uv){
+  float px=max(1.0,uPixSize);
+  return floor(uv*px)/px + 0.5/px;
 }
 
 vec2 glitchUv(vec2 uv){
@@ -1236,137 +1349,131 @@ vec2 glitchUv(vec2 uv){
   return guv;
 }
 
-vec2 pixelUv(vec2 uv){
-  float px=max(1.0,uPixSize);
-  return floor(uv*px)/px + 0.5/px;
+vec2 kaleidoUv(vec2 uv){
+  vec2 kp = uv - 0.5;
+  float ang = atan(kp.y,kp.x);
+  float r = length(kp);
+  float seg = max(2.0, uKSeg);
+  float k = 6.28318530718/seg;
+  ang = mod(ang + uTime*uKSpin, k);
+  ang = abs(ang - k*0.5);
+  vec2 ku = vec2(cos(ang), sin(ang))*r;
+  return ku + 0.5;
 }
 
-vec3 rgbShiftFromStage(int stage, vec2 uv){
-  float amt = uRGBAmt;
-  vec2 off = vec2(amt, 0.0);
-  if (stage==0){
-    vec3 c0 = sampleA(uv);
-    vec3 cR = sampleA(uv+off);
-    vec3 cB = sampleA(uv-off);
-    return vec3(cR.r, c0.g, cB.b);
-  }
-  if (stage==1){
-    vec3 c0 = sampleB(uv); c0 = mix(c0,1.0-c0,clamp(uInvB,0.0,1.0));
-    vec3 cR = sampleB(uv+off); cR = mix(cR,1.0-cR,clamp(uInvB,0.0,1.0));
-    vec3 cB = sampleB(uv-off); cB = mix(cB,1.0-cB,clamp(uInvB,0.0,1.0));
-    return vec3(cR.r, c0.g, cB.b);
-  }
-  if (stage==2){
-    vec3 c0 = computeMix(uv);
-    vec3 cR = computeMix(uv+off);
-    vec3 cB = computeMix(uv-off);
-    return vec3(cR.r, c0.g, cB.b);
-  }
-  // stage==3 (Final pre-post): same as mix (feedback/kaleido may modify later)
-  vec3 c0 = computeMix(uv);
-  vec3 cR = computeMix(uv+off);
-  vec3 cB = computeMix(uv-off);
-  return vec3(cR.r, c0.g, cB.b);
+vec3 mixAB(vec3 A, vec3 B){
+  vec3 Binv = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
+  vec3 mixedB = blend(A, Binv, uBlendMode);
+  return mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
 }
 
 void main(){
   vec2 uv = vUv;
 
-  // Start with base stages
-  vec3 A = sampleA(uv);
-  vec3 B = sampleB(uv); B = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
-  vec3 Mix = computeMix(uv);
-  vec3 Final = Mix;
+  // base samples
+  vec2 uvA = uv;
+  vec2 uvB = uv;
 
-  // Glitch targeted (recompute the targeted stage from glitched UV)
+  // Pixelate as a UV effect (apply only if targeting A/B/Mix/Final later)
+  vec2 uvPix = uv;
+  if (uPixelOn==1 && (uPixelT==0 || uPixelT==1 || uPixelT==2 || uPixelT==3)){
+    uvPix = (uPixelT==0 || uPixelT==1) ? pixelateUv(uv) : uv; // for Mix/Final we do after
+  }
+
+  vec3 A = sampleA(uvPix);
+  vec3 B = sampleB(uvPix);
+
+  // RGB targeting
+  if (uRGBOn==1){
+    if (uRGBT==0) A = rgbShiftFromSampler(0, uv);
+    else if (uRGBT==1) B = rgbShiftFromSampler(1, uv);
+  }
+
+  // Glitch targeting (UV disturbance)
   if (uGlitchOn==1){
     vec2 guv = glitchUv(uv);
-    if (uGlitchT==0) { A = sampleA(guv); }
-    else if (uGlitchT==1) { B = sampleB(guv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
-    else if (uGlitchT==2) { Mix = computeMix(guv); Final = Mix; }
-    else { Final = computeMix(guv); } // Final target (pre feedback/kaleido)
+    if (uGlitchT==0) A = sampleA(guv);
+    else if (uGlitchT==1) B = sampleB(guv);
   }
 
-  // Pixelate targeted (recompute from pixel UV)
-  if (uPixelOn==1){
-    vec2 puv = pixelUv(uv);
-    if (uPixelT==0) { A = sampleA(puv); }
-    else if (uPixelT==1) { B = sampleB(puv); B = mix(B,1.0-B,clamp(uInvB,0.0,1.0)); }
-    else if (uPixelT==2) { Mix = computeMix(puv); Final = Mix; }
-    else { Final = computeMix(puv); }
+  // Kaleido targeting (UV remap)
+  if (uKaleidoOn==1){
+    vec2 kuv = kaleidoUv(uv);
+    if (uKaleidoT==0) A = mix(A, sampleA(kuv), clamp(uKAmt,0.0,1.0));
+    else if (uKaleidoT==1) B = mix(B, sampleB(kuv), clamp(uKAmt,0.0,1.0));
   }
 
-  // RGB targeted (recompute targeted stage with channel offset)
-  if (uRGBOn==1){
-    if (uRGBT==0) A = rgbShiftFromStage(0, uv);
-    else if (uRGBT==1) B = rgbShiftFromStage(1, uv);
-    else if (uRGBT==2) { Mix = rgbShiftFromStage(2, uv); Final = Mix; }
-    else { Final = rgbShiftFromStage(3, uv); }
+  // Recompute Mix after A/B-targeted FX
+  vec3 Mix = mixAB(A, B);
+
+  // Pixelate targeting Mix
+  if (uPixelOn==1 && uPixelT==2){
+    vec2 puv = pixelateUv(uv);
+    vec3 a2 = sampleA(puv);
+    vec3 b2 = sampleB(puv);
+    Mix = mixAB(a2, b2);
   }
 
-  // After any re-targeting above, rebuild Mix/Final if A or B changed but Mix targeted wasn't selected
-  // (keeps things intuitive)
-  // If user targeted A or B, update Mix from current A/B at same uv
-  if (uGlitchOn==1 || uPixelOn==1 || uRGBOn==1){
-    if (uGlitchT==0 || uGlitchT==1 || uPixelT==0 || uPixelT==1 || uRGBT==0 || uRGBT==1){
-      vec3 mixedB = blend(A,B,uBlendMode);
-      Mix = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
-      Final = Mix;
-    }
+  // Glitch targeting Mix
+  if (uGlitchOn==1 && uGlitchT==2){
+    vec2 guv = glitchUv(uv);
+    vec3 a2 = sampleA(guv);
+    vec3 b2 = sampleB(guv);
+    Mix = mixAB(a2, b2);
   }
 
-  // Feedback (targeted) uses previous framebuffer
+  // Kaleido targeting Mix
+  if (uKaleidoOn==1 && uKaleidoT==2){
+    vec2 kuv = kaleidoUv(uv);
+    vec3 a2 = sampleA(kuv);
+    vec3 b2 = sampleB(kuv);
+    vec3 km = mixAB(a2, b2);
+    Mix = mix(Mix, km, clamp(uKAmt,0.0,1.0));
+  }
+
+  vec3 Final = Mix;
+
+  // Feedback targeting
   if (uFeedbackOn==1){
-    vec2 p = vUv - 0.5;
+    vec2 p = uv - 0.5;
     vec2 fbUv = rot2(p, uFbRot) / (1.0 + uFbZoom) + 0.5;
     vec3 fb = texture2D(uFB, fbUv).rgb;
-    float amt = clamp(uFbAmt,0.0,0.98);
-    if (uFeedbackT==0) A = mix(A, fb, amt);
-    else if (uFeedbackT==1) B = mix(B, fb, amt);
-    else if (uFeedbackT==2) Final = mix(Mix, fb, amt);
-    else Final = mix(Final, fb, amt);
-
-    // if feedback hit A/B, rebuild mix/final
-    if (uFeedbackT==0 || uFeedbackT==1){
-      vec3 mixedB = blend(A,B,uBlendMode);
-      Mix = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
-      Final = Mix;
-    }
+    float a = clamp(uFbAmt,0.0,0.98);
+    if (uFeedbackT==0) { A = mix(A, fb, a); Mix = mixAB(A,B); Final = Mix; }
+    else if (uFeedbackT==1) { B = mix(B, fb, a); Mix = mixAB(A,B); Final = Mix; }
+    else if (uFeedbackT==2) { Mix = mix(Mix, fb, a); Final = Mix; }
+    else { Final = mix(Final, fb, a); }
   }
 
-  // Kaleido (targeted) recomputes the targeted stage from kaleido UV
-  if (uKaleidoOn==1){
-    vec2 kp = vUv - 0.5;
-    float ang = atan(kp.y,kp.x);
-    float r = length(kp);
-    float seg = max(2.0, uKSeg);
-    float k = 6.28318530718/seg;
-    ang = mod(ang + uTime*uKSpin, k);
-    ang = abs(ang - k*0.5);
-    vec2 ku = vec2(cos(ang), sin(ang))*r;
-    vec2 uvk = ku + 0.5;
+  // Kaleido targeting Final
+  if (uKaleidoOn==1 && uKaleidoT==3){
+    vec2 kuv = kaleidoUv(uv);
+    vec3 km = mixAB(sampleA(kuv), sampleB(kuv));
+    Final = mix(Final, km, clamp(uKAmt,0.0,1.0));
+  }
 
-    float amt = clamp(uKAmt,0.0,1.0);
-    if (uKaleidoT==0){
-      vec3 kA = sampleA(uvk);
-      A = mix(A, kA, amt);
-    } else if (uKaleidoT==1){
-      vec3 kB = sampleB(uvk); kB = mix(kB, 1.0-kB, clamp(uInvB,0.0,1.0));
-      B = mix(B, kB, amt);
-    } else if (uKaleidoT==2){
-      vec3 kMix = computeMix(uvk);
-      Final = mix(Mix, kMix, amt);
-    } else {
-      vec3 kF = computeMix(uvk);
-      Final = mix(Final, kF, amt);
-    }
+  // RGB targeting Mix / Final (cheap but real)
+  if (uRGBOn==1 && (uRGBT==2 || uRGBT==3)){
+    float amt = uRGBAmt;
+    vec2 off = vec2(amt, 0.0);
+    vec3 f0 = Final;
+    vec3 fR = mixAB(sampleA(uv+off), sampleB(uv+off));
+    vec3 fB = mixAB(sampleA(uv-off), sampleB(uv-off));
+    vec3 shifted = vec3(fR.r, f0.g, fB.b);
+    if (uRGBT==2) Final = mix(Final, shifted, 1.0);
+    else Final = mix(Final, shifted, 1.0);
+  }
 
-    // if kaleido hit A/B, rebuild mix/final
-    if (uKaleidoT==0 || uKaleidoT==1){
-      vec3 mixedB = blend(A,B,uBlendMode);
-      Mix = mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
-      Final = Mix;
-    }
+  // Glitch targeting Final
+  if (uGlitchOn==1 && uGlitchT==3){
+    vec2 guv = glitchUv(uv);
+    Final = mixAB(sampleA(guv), sampleB(guv));
+  }
+
+  // Pixelate targeting Final
+  if (uPixelOn==1 && uPixelT==3){
+    vec2 puv = pixelateUv(uv);
+    Final = mixAB(sampleA(puv), sampleB(puv));
   }
 
   // Color controls on final
@@ -1466,7 +1573,7 @@ function targetToInt(v){
   if (v==="a") return 0;
   if (v==="b") return 1;
   if (v==="mix") return 2;
-  return 3; // final
+  return 3;
 }
 function rotToQ(v){
   const n = parseInt(v,10) || 0;
@@ -1486,9 +1593,6 @@ function tick(t){
     resizeCanvas();
     const hasA = !!capStreamA && capVideoA.readyState>=2;
     const hasB = !!capStreamB && capVideoB.readyState>=2;
-
-    $("fxOverlay").style.display = (!hasA && !hasB) ? "flex" : "none";
-
     if (hasA) updateVideoTexture(texA, capVideoA);
     if (hasB) updateVideoTexture(texB, capVideoB);
 
@@ -1521,7 +1625,6 @@ function tick(t){
     gl.uniform1f(gl.getUniformLocation(prog,"uContrast"), parseFloat($("fxContrast").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uSat"), parseFloat($("fxSat").value));
 
-    // transforms
     gl.uniform1i(gl.getUniformLocation(prog,"uAFlipH"), $("aFlipH").checked?1:0);
     gl.uniform1i(gl.getUniformLocation(prog,"uAFlipV"), $("aFlipV").checked?1:0);
     gl.uniform1i(gl.getUniformLocation(prog,"uARot"), rotToQ($("aRot").value));
@@ -1534,7 +1637,6 @@ function tick(t){
     gl.uniform3f(gl.getUniformLocation(prog,"uBCrop"),
       parseFloat($("bCx").value), parseFloat($("bCy").value), parseFloat($("bZoom").value));
 
-    // FX toggles
     gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackOn"), $("tFeedback").checked?1:0);
     gl.uniform1f(gl.getUniformLocation(prog,"uFbAmt"), parseFloat($("feedbackAmt").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uFbZoom"), parseFloat($("feedbackZoom").value));
@@ -1560,23 +1662,19 @@ function tick(t){
     gl.uniform1i(gl.getUniformLocation(prog,"uVigOn"), $("tVig").checked?1:0);
     gl.uniform1f(gl.getUniformLocation(prog,"uVigAmt"), parseFloat($("vigAmt").value));
 
-    // FX targets
     gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
 
-    // render to feedback
     gl.bindFramebuffer(gl.FRAMEBUFFER, nextFbo);
     gl.viewport(0,0,w,h);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    // swap
     ping = 1-ping;
     const nowTex = (ping===0) ? fbTex0 : fbTex1;
 
-    // render to screen using updated feedback tex
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, nowTex);
 
@@ -1588,38 +1686,27 @@ function tick(t){
 }
 
 /* =========================
-   Slider numeric readouts
+   Boot
 ========================= */
-function refreshValBadges(){
-  document.querySelectorAll("[data-valfor]").forEach(el=>{
-    const id = el.getAttribute("data-valfor");
-    const inp = document.getElementById(id);
-    if (!inp) return;
-    el.textContent = inp.value;
-  });
-}
-document.addEventListener("input", (e)=>{
-  const t = e.target;
-  if (t && t.id){
-    const badge = document.querySelector(`[data-valfor="${t.id}"]`);
-    if (badge) badge.textContent = t.value;
-  }
-});
-
-
 function resizeOnWindow(){ resizeCanvas(); }
 window.addEventListener("resize", resizeOnWindow);
 
 document.addEventListener("DOMContentLoaded", async ()=>{
   initGL();
+  initDefaultDecks();
+  renderDecks();
+
   rebuildLinkLayers();
   setMode("links");
-  refreshValBadges();
-  requestAnimationFrame(tick);
+  hookRangeReadouts();
 
-  // pre-load first deck
-  await ensureDeckLoaded();
-  renderDeck();
+  // preload default decks (so random works immediately)
+  for (const k of Object.keys(decks)){
+    await loadDeck(k);
+  }
+  renderDecks();
+
+  requestAnimationFrame(tick);
 });
 </script>
 </body>
