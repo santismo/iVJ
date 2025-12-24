@@ -161,8 +161,8 @@
     <div class="title">
       <h1>VJ Mixer</h1>
       <div class="sub">
-        <b>Link Mixer</b> = multiple YouTube links (blend). Includes per-layer crop/zoom + auto-random from decks.
-        <b>FX Capture</b> = capture tab/window pixels → real FX (targeted properly).
+        <b>Link Mixer</b> = multiple YouTube links (blend) + per-layer crop/zoom + auto-random from decks.
+        <b>FX Capture</b> = capture tab/window pixels → real FX (targets fixed) + slider number readouts.
       </div>
     </div>
     <div class="actions">
@@ -182,7 +182,7 @@
         <div class="big">FX Capture: waiting for capture…</div>
         <div class="small">
           Click <b>Capture A</b> (and optionally <b>Capture B</b>) in Controls.<br/>
-          Chrome will show a “sharing” banner — it can’t be removed by a webpage (browser security UI).
+          (Chrome’s sharing banner can’t be hidden by a webpage.)
         </div>
       </div>
     </div>
@@ -229,12 +229,12 @@
             </div>
           </div>
 
-          <!-- RIGHT SIDE: Why no FX + DECKS -->
+          <!-- RIGHT SIDE: DECKS + WHY -->
           <div class="card">
             <div class="cardHead"><div class="cardTitle">Video Decks (playlist thumbnails → send to layers)</div></div>
             <div class="cardBody">
               <div class="small">
-                This uses the <b>Invidious</b> playlist API to read playlist items and show thumbnails without YouTube’s CORS/throttling issues. :contentReference[oaicite:3]{index=3}
+                Decks load playlist items via Invidious API (no key). Thumbnails are forced to YouTube’s CDN for reliability.
               </div>
 
               <div class="deckTop">
@@ -244,11 +244,13 @@
                   </label>
                   <label>Invidious base (if one fails, swap)
                     <select id="invBase">
-                      <option value="https://yewtu.be" selected>https://yewtu.be</option>
+                      <option value="https://inv.nadecko.net" selected>https://inv.nadecko.net</option>
                       <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
-                      <option value="https://invidious.nerdvpn.de">https://invidious.nerdvpn.de</option>
-                      <option value="https://inv.perditum.com">https://inv.perditum.com</option>
-                      <option value="https://invidious.f5.si">https://invidious.f5.si</option>
+                      <option value="https://yewtu.be">https://yewtu.be</option>
+                      <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
+                      <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
+                      <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
+                      <option value="https://inv.nadeko.net">https://inv.nadeko.net</option>
                     </select>
                   </label>
                 </div>
@@ -260,6 +262,15 @@
                   <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
                     <button id="addCustomDeck" class="primary">Add Deck</button>
                     <button id="reloadAllDecks">Reload Decks</button>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <label>Random → All Layers source deck
+                    <select id="randomAllDeck"></select>
+                  </label>
+                  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <button id="randomAllLayers" class="primary">Random → All Layers</button>
                   </div>
                 </div>
 
@@ -302,7 +313,7 @@
             </div>
             <div class="cardBody">
               <div class="small">
-                “Auto-fit” matches crop to the captured source aspect ratio. It can’t detect the exact player area UI inside the tab.
+                “Auto-fit” matches crop to the captured source aspect ratio. It can’t detect the exact player-area inside the tab UI.
               </div>
 
               <div class="card" style="background:rgba(255,255,255,.01)">
@@ -414,7 +425,7 @@
 
           <div class="card">
             <div class="cardHead">
-              <div class="cardTitle">FX (choose what they affect) — fixed targeting</div>
+              <div class="cardTitle">FX (choose what they affect)</div>
               <div class="miniBtns"><button id="fxAllOff">All FX Off</button></div>
             </div>
             <div class="cardBody">
@@ -597,7 +608,7 @@ function hookRangeReadouts(){
 }
 
 /* =========================
-   MODE 1: Link Mixer (no WebGL)
+   MODE 1: Link Mixer
 ========================= */
 const DEFAULT_LINKS = [
   "https://www.youtube.com/watch?v=3pxrECZYEAA",
@@ -609,9 +620,231 @@ const BLENDS = [
 ];
 
 let linkLayerCount = 2;
-const linkLayers = []; // {el, ui, url, auto:{on,ms,deckKey}, timers}
+const linkLayers = []; // {el, ui, url, auto:{on,ms,deckKey}}
 let layerAutoTimers = new Map();
 
+/* =========================
+   Decks (Invidious playlist → video IDs)
+========================= */
+const DEFAULT_DECKS = [
+  { key:"trippy", name:"Trippy Visuals", url:"https://www.youtube.com/watch?v=sLkwdr74FVI&list=PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2" },
+  { key:"cartoons", name:"Old Cartoons", url:"https://www.youtube.com/watch?v=2lBjRpRtQjY&list=PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3" },
+  { key:"commercials", name:"Old Commercials", url:"https://www.youtube.com/watch?v=0tJ_KhgI4TY&list=PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu" }
+];
+
+const decks = {}; // key -> {name,url,listId,items:[{videoId,title,thumb}]}
+let DEFAULT_DECK_KEY = "trippy";
+
+function getInvidiousBase(){
+  return ($("invBase")?.value || "https://inv.nadecko.net").replace(/\/+$/,'');
+}
+function extractPlaylistId(anyUrl){
+  if (!anyUrl) return null;
+  const raw = anyUrl.trim();
+  try{
+    const u = new URL(raw);
+    const list = u.searchParams.get("list");
+    if (list) return list;
+    if (u.pathname.includes("/playlist")) return u.searchParams.get("list");
+  }catch(e){}
+  if (/^PL[a-zA-Z0-9_-]{10,}$/.test(raw)) return raw;
+  return null;
+}
+function deckThumbUrl(videoId){
+  // Force YouTube thumb CDN (stable across Invidious instances)
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+}
+async function fetchPlaylistAllVideos(listId){
+  const base = getInvidiousBase();
+  const out = [];
+  for (let page=1; page<=25; page++){
+    const url = `${base}/api/v1/playlists/${encodeURIComponent(listId)}?page=${page}`;
+    const r = await fetch(url, { mode:"cors" });
+    if (!r.ok) break;
+    const j = await r.json();
+    const vids = Array.isArray(j.videos) ? j.videos : [];
+    if (!vids.length) break;
+    for (const v of vids){
+      const vid = v.videoId || v.video_id || v.id;
+      if (!vid) continue;
+      out.push({
+        videoId: vid,
+        title: v.title || ""
+      });
+    }
+  }
+  const seen = new Set();
+  return out.filter(x=> (seen.has(x.videoId) ? false : (seen.add(x.videoId), true)));
+}
+function addDeck(key, name, url){
+  const listId = extractPlaylistId(url);
+  if (!listId){
+    $("deckStatus").textContent = "Decks: invalid playlist URL (missing list=PL...)";
+    return false;
+  }
+  decks[key] = { key, name, url, listId, items: [] };
+  return true;
+}
+function initDefaultDecks(){
+  DEFAULT_DECKS.forEach(d=>addDeck(d.key, d.name, d.url));
+}
+
+async function loadDeck(key){
+  const D = decks[key];
+  if (!D || !D.listId) return;
+  $("deckStatus").textContent = `Decks: loading "${D.name}"…`;
+  try{
+    const items = await fetchPlaylistAllVideos(D.listId);
+    D.items = items.map(it=>({
+      videoId: it.videoId,
+      title: it.title || it.videoId,
+      thumb: deckThumbUrl(it.videoId) // FORCE stable thumbs
+    }));
+    $("deckStatus").textContent = `Decks: loaded "${D.name}" (${D.items.length} videos)`;
+  }catch(e){
+    console.error(e);
+    $("deckStatus").textContent = `Decks: failed "${D.name}" — try another Invidious base`;
+    D.items = [];
+  }
+}
+
+function refreshDeckDropdowns(){
+  // randomAllDeck
+  const randSel = $("randomAllDeck");
+  if (randSel){
+    const cur = randSel.value || DEFAULT_DECK_KEY;
+    randSel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
+    randSel.value = decks[cur] ? cur : DEFAULT_DECK_KEY;
+  }
+  // per-layer auto deck selects already in DOM
+  document.querySelectorAll(`select[data-f="autoDeck"]`).forEach(sel=>{
+    const i = parseInt(sel.getAttribute("data-i"),10);
+    const L = linkLayers[i];
+    const cur = L?.auto?.deckKey || DEFAULT_DECK_KEY;
+    sel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
+    sel.value = decks[cur] ? cur : DEFAULT_DECK_KEY;
+  });
+}
+
+function updateDeckTargetLayerOptions(){
+  const sel = $("deckTargetLayer");
+  sel.innerHTML = "";
+  for (let i=0;i<linkLayerCount;i++){
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = `Layer ${i+1}`;
+    sel.appendChild(o);
+  }
+}
+
+function renderDecks(){
+  const wrap = $("deckList");
+  wrap.innerHTML = "";
+  Object.keys(decks).forEach(key=>{
+    const D = decks[key];
+    const el = document.createElement("div");
+    el.className = "deck";
+    el.innerHTML = `
+      <div class="deckHead">
+        <div class="deckName">${D.name}</div>
+        <div class="miniBtns">
+          <button data-act="reloadDeck" data-k="${key}">Load</button>
+          <button data-act="setDefault" data-k="${key}">Set Auto-Random Default</button>
+        </div>
+      </div>
+      <div class="thumbGrid" id="thumbGrid_${key}">
+        <div class="small" style="grid-column:1/-1;">${D.items?.length ? "" : "Not loaded yet — click Load."}</div>
+      </div>
+    `;
+    wrap.appendChild(el);
+
+    const grid = el.querySelector(`#thumbGrid_${key}`);
+    if (Array.isArray(D.items) && D.items.length){
+      grid.innerHTML = "";
+      const show = D.items.slice(0, 24);
+      for (const it of show){
+        const t = document.createElement("div");
+        t.className = "thumb";
+        t.innerHTML = `
+          <img
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            src="${it.thumb}"
+            alt=""
+            onerror="this.onerror=null; this.src='https://i.ytimg.com/vi/${it.videoId}/hqdefault.jpg';"
+          >
+          <div class="cap">${it.title || it.videoId}</div>
+        `;
+        t.addEventListener("click", ()=>pushVideoToLayer(it.videoId, null)); // null => use deckTargetLayer UI
+        grid.appendChild(t);
+      }
+      if (D.items.length > show.length){
+        const more = document.createElement("div");
+        more.className = "small";
+        more.style.gridColumn = "1/-1";
+        more.textContent = `Showing ${show.length} thumbnails (deck contains ${D.items.length}). Random uses the full list.`;
+        grid.appendChild(more);
+      }
+    }
+  });
+
+  refreshDeckDropdowns();
+}
+
+$("deckList").addEventListener("click", async (e)=>{
+  const b = e.target.closest("button[data-act]");
+  if (!b) return;
+  const act = b.getAttribute("data-act");
+  const k = b.getAttribute("data-k");
+  if (act==="reloadDeck"){
+    await loadDeck(k);
+    renderDecks();
+  }
+  if (act==="setDefault"){
+    DEFAULT_DECK_KEY = k;
+    $("deckStatus").textContent = `Decks: default auto-random = "${decks[k].name}"`;
+    refreshDeckDropdowns();
+  }
+});
+
+$("addCustomDeck").addEventListener("click", async ()=>{
+  const url = $("customPlaylistUrl").value.trim();
+  if (!url) return;
+  const listId = extractPlaylistId(url);
+  if (!listId){
+    $("deckStatus").textContent = "Decks: invalid playlist URL (needs list=...)";
+    return;
+  }
+  const key = "custom_" + Math.random().toString(16).slice(2,8);
+  addDeck(key, "Custom Deck", url);
+  await loadDeck(key);
+  renderDecks();
+  $("customPlaylistUrl").value = "";
+});
+
+$("reloadAllDecks").addEventListener("click", async ()=>{
+  $("deckStatus").textContent = "Decks: loading all…";
+  for (const k of Object.keys(decks)){
+    await loadDeck(k);
+  }
+  renderDecks();
+  $("deckStatus").textContent = "Decks: loaded all";
+});
+
+$("invBase").addEventListener("change", ()=>{
+  $("deckStatus").textContent = "Decks: switched Invidious base (reload decks)";
+});
+
+function pickRandomFromDeck(key){
+  const D = decks[key];
+  if (!D || !Array.isArray(D.items) || !D.items.length) return null;
+  const idx = Math.floor(Math.random() * D.items.length);
+  return D.items[idx].videoId;
+}
+
+/* =========================
+   YouTube embed helpers
+========================= */
 function extractVideoId(url){
   if (!url) return null;
   const raw = url.trim();
@@ -624,21 +857,20 @@ function extractVideoId(url){
   }catch(e){}
   return null;
 }
-
 function buildEmbedSrc(videoId){
   const origin = encodeURIComponent(location.origin);
   const loopOn = $("loopVideos").value === "on";
-  // YouTube embed "loop" requires playlist=VIDEO_ID
   const loopPart = loopOn ? `&loop=1&playlist=${videoId}` : "";
-  // Using youtube.com/embed tends to behave more "normal" than some alternate embed hosts.
   return `https://www.youtube.com/embed/${videoId}?playsinline=1&autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&disablekb=1&origin=${origin}${loopPart}`;
 }
-
 function fillBlendOptions(sel, def="difference"){
   sel.innerHTML = BLENDS.map(b=>`<option value="${b}">${b}</option>`).join("");
   sel.value = def;
 }
 
+/* =========================
+   Link layers + UI
+========================= */
 function makeLinkLayer(i){
   const el = document.createElement("div");
   el.className = "layer";
@@ -646,7 +878,6 @@ function makeLinkLayer(i){
   $("layersRoot").appendChild(el);
   return el;
 }
-
 function applyLinkStyle(i){
   const L = linkLayers[i];
   if (!L) return;
@@ -654,18 +885,18 @@ function applyLinkStyle(i){
   L.el.style.pointerEvents = tap ? "auto" : "none";
   L.el.style.opacity = L.ui.op;
   L.el.style.mixBlendMode = L.ui.blend;
-  // crop/zoom: transform the iframe element via CSS
+
+  // Crop/Zoom via CSS transform
   const z = Math.max(1, L.ui.zoom || 1);
   const cx = (L.ui.cx ?? 0.5);
   const cy = (L.ui.cy ?? 0.5);
-  // Translate so the chosen center stays centered after scaling.
   const tx = (0.5 - cx) * 100;
   const ty = (0.5 - cy) * 100;
   L.el.style.transformOrigin = `${cx*100}% ${cy*100}%`;
   L.el.style.transform = `translate(${tx}%, ${ty}%) scale(${z})`;
+
   L.el.style.filter = `invert(${L.ui.inv}) contrast(${L.ui.ct}) saturate(${L.ui.sat}) hue-rotate(${L.ui.hue}deg)`;
 }
-
 function mountLinkIframe(i){
   const L = linkLayers[i];
   const vid = extractVideoId(L.url);
@@ -674,15 +905,66 @@ function mountLinkIframe(i){
   L.el.innerHTML = `<iframe allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
 }
 
-function updateDeckTargetLayerOptions(){
-  const sel = $("deckTargetLayer");
-  sel.innerHTML = "";
-  for (let i=0;i<linkLayerCount;i++){
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = `Layer ${i+1}`;
-    sel.appendChild(o);
+/* Push video to a specific layer, OR (layerIndex=null) use deckTargetLayer dropdown */
+function pushVideoToLayer(videoId, layerIndex=null){
+  const i = (layerIndex === null)
+    ? (parseInt($("deckTargetLayer").value, 10) || 0)
+    : layerIndex;
+
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  linkLayers[i].url = url;
+
+  const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
+  if (inp) inp.value = url;
+
+  mountLinkIframe(i);
+  applyLinkStyle(i);
+  $("status").textContent = `Status: set Layer ${i+1}`;
+}
+
+function pickRandomIntoLayer(i){
+  const L = linkLayers[i];
+  const deckKey = L.auto.deckKey || DEFAULT_DECK_KEY;
+  const vid = pickRandomFromDeck(deckKey);
+  if (!vid){
+    $("status").textContent = `Status: deck "${decks[deckKey]?.name||deckKey}" not loaded`;
+    return;
   }
+  pushVideoToLayer(vid, i);
+}
+
+function randomizeAllLayers(){
+  const deckKey = $("randomAllDeck").value || DEFAULT_DECK_KEY;
+  const D = decks[deckKey];
+  if (!D || !Array.isArray(D.items) || !D.items.length){
+    $("status").textContent = `Status: deck "${decks[deckKey]?.name||deckKey}" not loaded`;
+    return;
+  }
+  const vids = D.items.map(x=>x.videoId);
+  const shuffled = vids.slice().sort(()=>Math.random()-0.5);
+  for (let i=0;i<linkLayerCount;i++){
+    const vid = shuffled[i] || vids[Math.floor(Math.random()*vids.length)];
+    pushVideoToLayer(vid, i);
+  }
+  $("status").textContent = `Status: random "${D.name}" → all layers`;
+}
+$("randomAllLayers").addEventListener("click", randomizeAllLayers);
+
+function stopAllLayerAuto(){
+  for (const [i, timer] of layerAutoTimers.entries()) clearInterval(timer);
+  layerAutoTimers.clear();
+}
+function syncLayerAuto(i){
+  const L = linkLayers[i];
+  if (!L) return;
+  if (layerAutoTimers.has(i)){
+    clearInterval(layerAutoTimers.get(i));
+    layerAutoTimers.delete(i);
+  }
+  if (!L.auto.on) return;
+  const ms = Math.max(5000, L.auto.ms || 30000);
+  const timer = setInterval(()=>pickRandomIntoLayer(i), ms);
+  layerAutoTimers.set(i, timer);
 }
 
 function rebuildLinkUI(){
@@ -739,7 +1021,7 @@ function rebuildLinkUI(){
             <label>Timer (seconds)
               <input type="range" min="5" max="600" step="1" data-f="autoSec" data-i="${i}"/>
             </label>
-            <div class="small">If a deck has 0 items, load decks first (right side).</div>
+            <div class="small">If a deck has 0 items, click Load/Reload on the right.</div>
           </div>
         </div>
 
@@ -762,7 +1044,6 @@ function rebuildLinkUI(){
     const sel = item.querySelector(`select[data-f="blend"][data-i="${i}"]`);
     fillBlendOptions(sel, L.ui.blend);
 
-    // Auto random controls
     item.querySelector(`[data-f="autoOn"][data-i="${i}"]`).checked = !!L.auto.on;
     item.querySelector(`[data-f="autoSec"][data-i="${i}"]`).value = Math.round((L.auto.ms||30000)/1000);
 
@@ -772,11 +1053,14 @@ function rebuildLinkUI(){
   }
 
   updateDeckTargetLayerOptions();
+  refreshDeckDropdowns();
 }
 
 function rebuildLinkLayers(){
   $("layersRoot").innerHTML="";
   linkLayers.length=0;
+  stopAllLayerAuto();
+
   for (let i=0;i<linkLayerCount;i++){
     const el = makeLinkLayer(i);
     linkLayers.push({
@@ -796,9 +1080,6 @@ function rebuildLinkLayers(){
     mountLinkIframe(i);
     applyLinkStyle(i);
   }
-  rebuildLinkUI();
-  stopAllLayerAuto();
-  // rebuild UI after stopping timers so checkboxes remain consistent
   rebuildLinkUI();
 }
 
@@ -855,247 +1136,6 @@ $("layerList").addEventListener("click", (e)=>{
   if (act==="pickRandom"){
     pickRandomIntoLayer(i);
   }
-});
-
-/* =========================
-   Video Decks (playlists → thumbnails)
-========================= */
-// Uses Invidious: https://docs.invidious.io/api/  + instances list: https://docs.invidious.io/instances/  :contentReference[oaicite:4]{index=4}
-
-const DEFAULT_DECKS = [
-  { key:"trippy", name:"Trippy Visuals", url:"https://www.youtube.com/watch?v=sLkwdr74FVI&list=PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2" },
-  { key:"cartoons", name:"Old Cartoons", url:"https://www.youtube.com/watch?v=2lBjRpRtQjY&list=PL1ZB2TfCq41TxhYoCOeYiwONkig6Lt_C3" },
-  { key:"commercials", name:"Old Commercials", url:"https://www.youtube.com/watch?v=0tJ_KhgI4TY&list=PLxqMsrhM_WC25QOMHMQp-Cm9k6nfc_vPu" }
-];
-
-const decks = {}; // key -> {name,url,listId,items:[{videoId,title,thumb}]}
-let DEFAULT_DECK_KEY = "trippy";
-
-function getInvidiousBase(){
-  return $("invBase").value || "https://yewtu.be";
-}
-
-function extractPlaylistId(anyUrl){
-  if (!anyUrl) return null;
-  const raw = anyUrl.trim();
-  try{
-    const u = new URL(raw);
-    const list = u.searchParams.get("list");
-    if (list) return list;
-    // accept playlist?list=...
-    if (u.pathname.includes("/playlist")) return u.searchParams.get("list");
-  }catch(e){}
-  // allow direct PLxxxx
-  if (/^PL[a-zA-Z0-9_-]{10,}$/.test(raw)) return raw;
-  return null;
-}
-
-async function fetchPlaylistAllVideos(listId){
-  // Invidious endpoint supports pagination with ?page=
-  // /api/v1/playlists/:plid :contentReference[oaicite:5]{index=5}
-  const base = getInvidiousBase().replace(/\/+$/,'');
-  const out = [];
-  for (let page=1; page<=25; page++){
-    const url = `${base}/api/v1/playlists/${encodeURIComponent(listId)}?page=${page}`;
-    const r = await fetch(url, { mode:"cors" });
-    if (!r.ok) break;
-    const j = await r.json();
-    const vids = Array.isArray(j.videos) ? j.videos : [];
-    if (!vids.length) break;
-    for (const v of vids){
-      const vid = v.videoId || v.video_id || v.id;
-      if (!vid) continue;
-      out.push({
-        videoId: vid,
-        title: v.title || "",
-        thumb: (v.videoThumbnails && v.videoThumbnails[0] && v.videoThumbnails[0].url) ? v.videoThumbnails[0].url : `https://i.ytimg.com/vi/${vid}/hqdefault.jpg`
-      });
-    }
-    // some instances return exactly 100 per page; keep going until empty
-  }
-  // de-dupe
-  const seen = new Set();
-  return out.filter(x=> (seen.has(x.videoId) ? false : (seen.add(x.videoId), true)));
-}
-
-function deckThumbUrl(videoId){
-  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-}
-
-async function loadDeck(key){
-  const D = decks[key];
-  if (!D || !D.listId) return;
-  $("deckStatus").textContent = `Decks: loading "${D.name}"…`;
-  try{
-    const items = await fetchPlaylistAllVideos(D.listId);
-    D.items = items.map(it=>({
-      videoId: it.videoId,
-      title: it.title || it.videoId,
-      thumb: it.thumb || deckThumbUrl(it.videoId)
-    }));
-    $("deckStatus").textContent = `Decks: loaded "${D.name}" (${D.items.length} videos)`;
-  }catch(e){
-    console.error(e);
-    $("deckStatus").textContent = `Decks: failed "${D.name}" — try another Invidious base`;
-    D.items = [];
-  }
-}
-
-function renderDecks(){
-  const wrap = $("deckList");
-  wrap.innerHTML = "";
-  Object.keys(decks).forEach(key=>{
-    const D = decks[key];
-    const el = document.createElement("div");
-    el.className = "deck";
-    el.innerHTML = `
-      <div class="deckHead">
-        <div class="deckName">${D.name}</div>
-        <div class="miniBtns">
-          <button data-act="reloadDeck" data-k="${key}">Load</button>
-          <button data-act="setDefault" data-k="${key}">Use for Auto-Random default</button>
-        </div>
-      </div>
-      <div class="thumbGrid" id="thumbGrid_${key}">
-        <div class="small" style="grid-column:1/-1;">${D.items?.length ? "" : "Not loaded yet — click Load."}</div>
-      </div>
-    `;
-    wrap.appendChild(el);
-
-    const grid = el.querySelector(`#thumbGrid_${key}`);
-    if (Array.isArray(D.items) && D.items.length){
-      grid.innerHTML = "";
-      // show first 24 thumbs for performance (random still uses full list)
-      const show = D.items.slice(0, 24);
-      for (const it of show){
-        const t = document.createElement("div");
-        t.className = "thumb";
-        t.innerHTML = `<img loading="lazy" src="${it.thumb}" alt=""><div class="cap">${it.title || it.videoId}</div>`;
-        t.addEventListener("click", ()=>pushVideoToLayer(it.videoId));
-        grid.appendChild(t);
-      }
-      if (D.items.length > show.length){
-        const more = document.createElement("div");
-        more.className = "small";
-        more.style.gridColumn = "1/-1";
-        more.textContent = `Showing ${show.length} thumbnails (deck contains ${D.items.length}). Random uses the full list.`;
-        grid.appendChild(more);
-      }
-    }
-  });
-
-  // keep auto deck selects updated
-  rebuildLinkUI();
-}
-
-function pushVideoToLayer(videoId){
-  const i = parseInt($("deckTargetLayer").value, 10) || 0;
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
-  linkLayers[i].url = url;
-  // reflect in input UI
-  const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
-  if (inp) inp.value = url;
-  mountLinkIframe(i);
-  applyLinkStyle(i);
-  $("status").textContent = `Status: deck → Layer ${i+1}`;
-}
-
-function pickRandomFromDeck(key){
-  const D = decks[key];
-  if (!D || !Array.isArray(D.items) || !D.items.length) return null;
-  const idx = Math.floor(Math.random() * D.items.length);
-  return D.items[idx].videoId;
-}
-
-function pickRandomIntoLayer(i){
-  const L = linkLayers[i];
-  const deckKey = L.auto.deckKey || DEFAULT_DECK_KEY;
-  const vid = pickRandomFromDeck(deckKey);
-  if (!vid){
-    $("status").textContent = `Status: deck "${decks[deckKey]?.name||deckKey}" not loaded`;
-    return;
-  }
-  pushVideoToLayer(vid);
-}
-
-function stopAllLayerAuto(){
-  for (const [i, timer] of layerAutoTimers.entries()){
-    clearInterval(timer);
-  }
-  layerAutoTimers.clear();
-}
-
-function syncLayerAuto(i){
-  const L = linkLayers[i];
-  if (!L) return;
-  // clear existing
-  if (layerAutoTimers.has(i)){
-    clearInterval(layerAutoTimers.get(i));
-    layerAutoTimers.delete(i);
-  }
-  if (!L.auto.on) return;
-  const ms = Math.max(5000, L.auto.ms || 30000);
-  const timer = setInterval(()=>pickRandomIntoLayer(i), ms);
-  layerAutoTimers.set(i, timer);
-}
-
-function addDeck(key, name, url){
-  const listId = extractPlaylistId(url);
-  if (!listId){
-    $("deckStatus").textContent = "Decks: invalid playlist URL (missing list=PL...)";
-    return false;
-  }
-  decks[key] = { key, name, url, listId, items: [] };
-  return true;
-}
-
-function initDefaultDecks(){
-  DEFAULT_DECKS.forEach(d=>addDeck(d.key, d.name, d.url));
-}
-
-$("deckList").addEventListener("click", async (e)=>{
-  const b = e.target.closest("button[data-act]");
-  if (!b) return;
-  const act = b.getAttribute("data-act");
-  const k = b.getAttribute("data-k");
-  if (act==="reloadDeck"){
-    await loadDeck(k);
-    renderDecks();
-  }
-  if (act==="setDefault"){
-    DEFAULT_DECK_KEY = k;
-    $("deckStatus").textContent = `Decks: default auto-random = "${decks[k].name}"`;
-    // update selects to reflect default, but don't override per-layer choice
-    rebuildLinkUI();
-  }
-});
-
-$("addCustomDeck").addEventListener("click", async ()=>{
-  const url = $("customPlaylistUrl").value.trim();
-  if (!url) return;
-  const listId = extractPlaylistId(url);
-  if (!listId){
-    $("deckStatus").textContent = "Decks: invalid playlist URL (needs list=...)";
-    return;
-  }
-  const key = "custom_" + Math.random().toString(16).slice(2,8);
-  addDeck(key, "Custom Deck", url);
-  await loadDeck(key);
-  renderDecks();
-  $("customPlaylistUrl").value = "";
-});
-
-$("reloadAllDecks").addEventListener("click", async ()=>{
-  $("deckStatus").textContent = "Decks: loading all…";
-  for (const k of Object.keys(decks)){
-    await loadDeck(k);
-  }
-  renderDecks();
-  $("deckStatus").textContent = "Decks: loaded all";
-});
-
-$("invBase").addEventListener("change", ()=>{
-  $("deckStatus").textContent = "Decks: switched Invidious base (reload decks)";
 });
 
 /* =========================
@@ -1164,7 +1204,7 @@ $("fitA").addEventListener("click", ()=>autoFit("A"));
 $("fitB").addEventListener("click", ()=>autoFit("B"));
 
 /* =========================
-   WebGL pipeline (fixed stage targeting)
+   WebGL pipeline (targeting fixed)
 ========================= */
 const canvas=$("fxOut");
 let gl=null, prog=null, quadVBO=null;
@@ -1370,70 +1410,44 @@ vec3 mixAB(vec3 A, vec3 B){
 void main(){
   vec2 uv = vUv;
 
-  // base samples
-  vec2 uvA = uv;
-  vec2 uvB = uv;
+  vec3 A = sampleA(uv);
+  vec3 B = sampleB(uv);
 
-  // Pixelate as a UV effect (apply only if targeting A/B/Mix/Final later)
-  vec2 uvPix = uv;
-  if (uPixelOn==1 && (uPixelT==0 || uPixelT==1 || uPixelT==2 || uPixelT==3)){
-    uvPix = (uPixelT==0 || uPixelT==1) ? pixelateUv(uv) : uv; // for Mix/Final we do after
-  }
-
-  vec3 A = sampleA(uvPix);
-  vec3 B = sampleB(uvPix);
-
-  // RGB targeting
   if (uRGBOn==1){
     if (uRGBT==0) A = rgbShiftFromSampler(0, uv);
     else if (uRGBT==1) B = rgbShiftFromSampler(1, uv);
   }
 
-  // Glitch targeting (UV disturbance)
   if (uGlitchOn==1){
     vec2 guv = glitchUv(uv);
     if (uGlitchT==0) A = sampleA(guv);
     else if (uGlitchT==1) B = sampleB(guv);
   }
 
-  // Kaleido targeting (UV remap)
   if (uKaleidoOn==1){
     vec2 kuv = kaleidoUv(uv);
     if (uKaleidoT==0) A = mix(A, sampleA(kuv), clamp(uKAmt,0.0,1.0));
     else if (uKaleidoT==1) B = mix(B, sampleB(kuv), clamp(uKAmt,0.0,1.0));
   }
 
-  // Recompute Mix after A/B-targeted FX
   vec3 Mix = mixAB(A, B);
 
-  // Pixelate targeting Mix
   if (uPixelOn==1 && uPixelT==2){
     vec2 puv = pixelateUv(uv);
-    vec3 a2 = sampleA(puv);
-    vec3 b2 = sampleB(puv);
-    Mix = mixAB(a2, b2);
+    Mix = mixAB(sampleA(puv), sampleB(puv));
   }
-
-  // Glitch targeting Mix
   if (uGlitchOn==1 && uGlitchT==2){
     vec2 guv = glitchUv(uv);
-    vec3 a2 = sampleA(guv);
-    vec3 b2 = sampleB(guv);
-    Mix = mixAB(a2, b2);
+    Mix = mixAB(sampleA(guv), sampleB(guv));
   }
-
-  // Kaleido targeting Mix
   if (uKaleidoOn==1 && uKaleidoT==2){
     vec2 kuv = kaleidoUv(uv);
-    vec3 a2 = sampleA(kuv);
-    vec3 b2 = sampleB(kuv);
-    vec3 km = mixAB(a2, b2);
+    vec3 km = mixAB(sampleA(kuv), sampleB(kuv));
     Mix = mix(Mix, km, clamp(uKAmt,0.0,1.0));
   }
 
   vec3 Final = Mix;
 
-  // Feedback targeting
   if (uFeedbackOn==1){
     vec2 p = uv - 0.5;
     vec2 fbUv = rot2(p, uFbRot) / (1.0 + uFbZoom) + 0.5;
@@ -1445,38 +1459,31 @@ void main(){
     else { Final = mix(Final, fb, a); }
   }
 
-  // Kaleido targeting Final
   if (uKaleidoOn==1 && uKaleidoT==3){
     vec2 kuv = kaleidoUv(uv);
     vec3 km = mixAB(sampleA(kuv), sampleB(kuv));
     Final = mix(Final, km, clamp(uKAmt,0.0,1.0));
   }
 
-  // RGB targeting Mix / Final (cheap but real)
   if (uRGBOn==1 && (uRGBT==2 || uRGBT==3)){
     float amt = uRGBAmt;
     vec2 off = vec2(amt, 0.0);
     vec3 f0 = Final;
     vec3 fR = mixAB(sampleA(uv+off), sampleB(uv+off));
     vec3 fB = mixAB(sampleA(uv-off), sampleB(uv-off));
-    vec3 shifted = vec3(fR.r, f0.g, fB.b);
-    if (uRGBT==2) Final = mix(Final, shifted, 1.0);
-    else Final = mix(Final, shifted, 1.0);
+    Final = vec3(fR.r, f0.g, fB.b);
   }
 
-  // Glitch targeting Final
   if (uGlitchOn==1 && uGlitchT==3){
     vec2 guv = glitchUv(uv);
     Final = mixAB(sampleA(guv), sampleB(guv));
   }
 
-  // Pixelate targeting Final
   if (uPixelOn==1 && uPixelT==3){
     vec2 puv = pixelateUv(uv);
     Final = mixAB(sampleA(puv), sampleB(puv));
   }
 
-  // Color controls on final
   Final *= uExposure;
   Final = (Final - 0.5)*uContrast + 0.5;
   Final = satAdjust(Final, uSat);
@@ -1700,11 +1707,13 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   setMode("links");
   hookRangeReadouts();
 
-  // preload default decks (so random works immediately)
+  // Preload default decks so random works immediately
+  $("deckStatus").textContent = "Decks: loading defaults…";
   for (const k of Object.keys(decks)){
     await loadDeck(k);
   }
   renderDecks();
+  $("deckStatus").textContent = "Decks: loaded defaults";
 
   requestAnimationFrame(tick);
 });
