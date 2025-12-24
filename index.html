@@ -6,13 +6,14 @@
   <title>iVJ</title>
   <style>
     :root{
-      --bg:#07080c; --panel:#0f1118;
+      --bg:#07080c; --panel:#0f1118; --panel2:#0b0d13;
       --text:#e9edf6; --muted:#9aa3b5; --border:rgba(255,255,255,.12);
       --accent:#7aa2ff; --radius:16px; --maxw:1200px;
     }
     html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
     .wrap{max-width:var(--maxw);margin:16px auto;padding:0 14px;display:grid;gap:12px;}
     .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .title{display:grid;gap:4px}
     h1{margin:0;font-size:18px;letter-spacing:.2px}
     .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     button{
@@ -30,7 +31,6 @@
     }
     button.danger{border-color:rgba(255,130,130,.5)}
     button:active{transform:translateY(1px)}
-
     .quickBar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .quickBar .pill{
       display:inline-flex;gap:8px;align-items:center;
@@ -40,6 +40,7 @@
       background:rgba(255,255,255,.02);
     }
     .quickBtn{padding:8px 10px;font-size:12px}
+
     .stage{
       position:relative; width:100%; aspect-ratio:16/9;
       border-radius:var(--radius); overflow:hidden; border:1px solid var(--border);
@@ -48,22 +49,51 @@
     #mixStage{position:absolute; inset:0; z-index:10;}
     .layersRoot{position:absolute; inset:0; z-index:10;}
     .layer{position:absolute; inset:0; pointer-events:none; will-change:opacity,filter,transform; mix-blend-mode:normal; opacity:1;}
-    .layer iframe, .layer video{width:100%;height:100%;border:0;display:block;object-fit:cover;}
+    .layer iframe{width:100%;height:100%;border:0;display:block;}
 
-    /* WebGL FX output overlay */
+    /* WebGL output canvas (capture FX overlay) */
     canvas#fxOut{
       position:absolute; inset:0; width:100%; height:100%;
       display:none;
-      z-index:40;
+      z-index:30;
       pointer-events:none;
     }
 
-    .controls{
-      background:rgba(255,255,255,.03);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      overflow:hidden;
+    /* Top-right overlay on stage (hidden unless capture active) */
+    .fxHUD{
+      position:absolute;
+      right:10px;
+      top:10px;
+      z-index:60;
+      display:none;
+      pointer-events:auto;
+      user-select:none;
     }
+    .fxHUD .btn{
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.28);
+      color:rgba(255,255,255,.92);
+      backdrop-filter: blur(8px);
+      border-radius:999px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-size:13px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      opacity:.86;
+      transition:opacity .15s ease, transform .15s ease;
+      box-shadow:0 18px 60px rgba(0,0,0,.35);
+    }
+    .fxHUD .btn:hover{ opacity:1; transform:translateY(-1px); }
+    .fxHUD .dot{
+      width:8px;height:8px;border-radius:99px;
+      background:rgba(122,162,255,.95);
+      box-shadow:0 0 0 2px rgba(122,162,255,.20);
+    }
+    .fxHUD.min .label{ display:none; }
+
+    .controls{background:rgba(255,255,255,.03); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
     .controlsHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap; padding:12px; border-bottom:1px solid var(--border);}
     .badge{font-size:12px;color:var(--muted); border:1px solid var(--border); padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.02);}
     .controlsBody{display:none;padding:12px;gap:12px}
@@ -72,34 +102,13 @@
     @media (max-width: 980px){.grid{grid-template-columns: 1fr;}}
     .card{border:1px solid var(--border); border-radius:var(--radius); background:rgba(0,0,0,.22); overflow:hidden;}
     .cardBody{padding:12px;display:grid;gap:10px}
-
-    details.menu{
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      background:rgba(0,0,0,.18);
-      overflow:hidden;
-    }
-    details.menu > summary{
-      list-style:none;
-      cursor:pointer;
-      padding:10px 12px;
-      display:flex;align-items:center;justify-content:space-between;
-      gap:10px;
-      user-select:none;
-      font-weight:700;font-size:13px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    details.menu > summary::-webkit-details-marker{display:none}
-    details.menu[open] > summary{border-bottom-color:rgba(255,255,255,.10)}
-    details.menu .inside{padding:12px;display:grid;gap:10px}
-
     label{display:grid;gap:6px;font-size:12px;color:var(--muted);}
     input[type="text"], input[type="number"], select{
       width:100%; padding:10px; border-radius:12px;
       border:1px solid var(--border); background:rgba(0,0,0,.30);
       color:var(--text); font-size:14px; outline:none;
     }
-
+    input[type="range"]{width:100%;}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     @media (max-width: 740px){.row{grid-template-columns:1fr;}}
     .toggle{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;user-select:none}
@@ -108,20 +117,67 @@
     .miniBtns button{padding:8px 10px;font-size:12px}
     .small{font-size:12px;color:var(--muted);line-height:1.25}
 
-    .range2{
-      display:grid;
-      grid-template-columns: 1fr 110px;
-      gap:10px;
-      align-items:center;
+    /* collapsible menus */
+    details.menu{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
     }
-    input[type="range"]{width:100%;}
-    input[type="number"]{font-variant-numeric:tabular-nums;}
+    details.menu > summary{
+      list-style:none;
+      cursor:pointer;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      user-select:none;
+      font-weight:800;
+      font-size:13px;
+    }
+    details.menu > summary::-webkit-details-marker{display:none}
+    details.menu .inside{
+      padding:12px;
+      border-top:1px solid var(--border);
+      display:grid;
+      gap:10px;
+    }
+    details.menu .inside details.menu{
+      background:rgba(0,0,0,.16);
+    }
+
+    /* range + number pair */
+    .rpair{display:grid;grid-template-columns:1fr 110px;gap:10px;align-items:center}
+    .rpair input[type="number"]{text-align:right}
 
     .layerList{display:grid;gap:10px}
-    .layerItem{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02);overflow:hidden}
-    .layerItem .inside{padding:12px}
+    details.layerItem > summary{
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      user-select:none;
+      font-weight:800;
+      font-size:13px;
+      list-style:none;
+      cursor:pointer;
+    }
+    details.layerItem > summary::-webkit-details-marker{display:none}
+    details.layerItem{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+    details.layerItem .inside{
+      padding:12px;
+      border-top:1px solid var(--border);
+      display:grid;
+      gap:10px;
+    }
 
-    .deckTop{display:grid;gap:10px}
     .deckList{display:grid;gap:12px}
     .deck{
       border:1px solid var(--border);
@@ -133,7 +189,7 @@
       padding:10px 12px;
       border-bottom:1px solid var(--border);
       display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-      font-weight:800;font-size:13px
+      font-weight:800;font-size:13px;
     }
     .thumbGrid{
       padding:12px;
@@ -157,24 +213,20 @@
       font-size:11px;
       background:linear-gradient(transparent, rgba(0,0,0,.75));
       color:rgba(255,255,255,.92);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      text-shadow:0 1px 2px rgba(0,0,0,.6);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-
-    /* FX panel (above decks) */
-    .fxDock{
-      display:grid;
-      gap:10px;
-    }
-    .fxDock .statusRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .fxDock .statusRow .badge{color:var(--text)}
-    .fxDock.disabled{opacity:.45; filter:saturate(.6)}
-    .fxDock.disabled button{cursor:not-allowed}
   </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
-    <h1>iVJ</h1>
+    <div class="title">
+      <h1>iVJ</h1>
+    </div>
+
     <div class="actions">
       <div class="quickBar" id="quickBar">
         <span class="pill">Quick Random</span>
@@ -195,33 +247,43 @@
     <div id="mixStage">
       <div class="layersRoot" id="layersRoot"></div>
     </div>
+
+    <!-- WebGL output overlay -->
     <canvas id="fxOut"></canvas>
+
+    <!-- Minimal FX HUD on stage (only when capture exists) -->
+    <div class="fxHUD min" id="fxHUD">
+      <div class="btn" id="fxHUDToggle" title="Minimize / Expand">
+        <span class="dot"></span><span class="label">FX</span>
+      </div>
+    </div>
   </div>
 
   <div class="controls" id="controls">
     <div class="controlsHead">
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <span class="badge" id="status">idle</span>
-        <span class="badge" id="capBadge">capture: off</span>
+        <span class="badge" id="status">Status: idle</span>
+        <span class="badge" id="deckStatus">Decks: not loaded</span>
+      </div>
+      <div class="miniBtns">
+        <button id="addLayer">Add</button>
+        <button id="removeLayer" class="danger">Remove</button>
+        <button id="reloadLinks">Reload</button>
       </div>
     </div>
 
     <div class="controlsBody" id="controlsBody">
       <div class="grid">
-        <!-- LEFT: layers -->
+
+        <!-- LEFT: Layers + FX -->
         <div class="card">
           <div class="cardBody">
-            <div class="miniBtns">
-              <button id="addLayer">Add</button>
-              <button id="removeLayer" class="danger">Remove</button>
-              <button id="reloadLinks">Reload</button>
-            </div>
 
-            <details class="menu">
-              <summary>Layer Settings</summary>
+            <details class="menu" open>
+              <summary>Links</summary>
               <div class="inside">
                 <div class="row">
-                  <label>Tap-through UI
+                  <label>Tap UI
                     <select id="tapUI">
                       <option value="off" selected>off</option>
                       <option value="on">on</option>
@@ -237,315 +299,340 @@
               </div>
             </details>
 
-            <div class="layerList" id="layerList"></div>
-          </div>
-        </div>
+            <details class="menu" id="fxMenu">
+              <summary>Capture FX</summary>
+              <div class="inside">
 
-        <!-- RIGHT: FX dock + decks -->
-        <div class="card">
-          <div class="cardBody">
-            <div class="fxDock" id="fxDock">
-              <details class="menu" id="fxMenu" open>
-                <summary>FX (capture)</summary>
-                <div class="inside">
-                  <div class="miniBtns">
-                    <button id="stopAllCapture">Stop Capture</button>
-                    <button id="fxAllOff">All FX Off</button>
+                <div class="miniBtns">
+                  <button id="capA" class="primary">Capture A</button>
+                  <button id="capB" class="primary">Capture B</button>
+                  <button id="stopCap">Stop</button>
+                </div>
+
+                <details class="menu" id="fxCaptureXform" open>
+                  <summary>Capture Transform</summary>
+                  <div class="inside">
+                    <div class="row">
+                      <label class="toggle"><input id="flipYA" type="checkbox" checked> A flip Y</label>
+                      <label class="toggle"><input id="flipXA" type="checkbox"> A flip X</label>
+                    </div>
+                    <div class="row">
+                      <label class="toggle"><input id="flipYB" type="checkbox" checked> B flip Y</label>
+                      <label class="toggle"><input id="flipXB" type="checkbox"> B flip X</label>
+                    </div>
+
+                    <div class="row">
+                      <label>Mirror mode
+                        <select id="mirrorMode">
+                          <option value="0" selected>off</option>
+                          <option value="1">horiz</option>
+                          <option value="2">vert</option>
+                          <option value="3">both</option>
+                        </select>
+                      </label>
+                      <label>Overlay blend
+                        <select id="fxCanvasBlend">
+                          <option value="normal" selected>normal</option>
+                          <option value="screen">screen</option>
+                          <option value="difference">difference</option>
+                          <option value="overlay">overlay</option>
+                          <option value="lighten">lighten</option>
+                          <option value="multiply">multiply</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label>Overlay opacity
+                      <div class="rpair">
+                        <input id="fxCanvasOpacity" type="range" min="0" max="1" step="0.01" value="1">
+                        <input id="fxCanvasOpacity_n" type="number" min="0" max="1" step="0.01" value="1">
+                      </div>
+                    </label>
+
                   </div>
+                </details>
 
-                  <details class="menu" id="fxBasics">
-                    <summary>Basics</summary>
-                    <div class="inside">
-                      <div class="row">
-                        <label>Blend
-                          <select id="fxBlend">
-                            <option value="difference">difference</option>
-                            <option value="screen">screen</option>
-                            <option value="add">add</option>
-                            <option value="multiply">multiply</option>
-                            <option value="overlay">overlay</option>
-                            <option value="exclusion">exclusion</option>
-                            <option value="normal" selected>normal</option>
-                          </select>
-                        </label>
-                        <label>Use A as B (if B missing)
-                          <select id="useAasB">
-                            <option value="1" selected>on</option>
-                            <option value="0">off</option>
-                          </select>
-                        </label>
-                      </div>
-
-                      <label class="range2">B Opacity
-                        <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="1">
-                        <input data-num-for="fxBOpacity" type="number" min="0" max="1" step="0.01" value="1">
+                <details class="menu" open>
+                  <summary>Mix</summary>
+                  <div class="inside">
+                    <div class="row">
+                      <label>Blend (B over A)
+                        <select id="fxBlend">
+                          <option value="difference">difference</option>
+                          <option value="screen">screen</option>
+                          <option value="add">add</option>
+                          <option value="multiply">multiply</option>
+                          <option value="overlay">overlay</option>
+                          <option value="exclusion">exclusion</option>
+                          <option value="normal" selected>normal</option>
+                        </select>
                       </label>
 
-                      <label class="range2">Invert B
-                        <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="0">
-                        <input data-num-for="fxInvB" type="number" min="0" max="1" step="0.01" value="0">
+                      <label>B Opacity
+                        <div class="rpair">
+                          <input id="fxBOpacity" type="range" min="0" max="1" step="0.01" value="0.85">
+                          <input id="fxBOpacity_n" type="number" min="0" max="1" step="0.01" value="0.85">
+                        </div>
+                      </label>
+                    </div>
+
+                    <div class="row">
+                      <label>Invert B
+                        <div class="rpair">
+                          <input id="fxInvB" type="range" min="0" max="1" step="0.01" value="0">
+                          <input id="fxInvB_n" type="number" min="0" max="1" step="0.01" value="0">
+                        </div>
                       </label>
 
-                      <div class="row">
-                        <label class="range2">Exposure
+                      <label class="toggle" style="align-self:end">
+                        <input id="useAasB" type="checkbox" checked> Use A as B
+                      </label>
+                    </div>
+
+                    <div class="row">
+                      <label>Exposure
+                        <div class="rpair">
                           <input id="fxExposure" type="range" min="0.5" max="2.5" step="0.01" value="1.05">
-                          <input data-num-for="fxExposure" type="number" min="0.5" max="2.5" step="0.01" value="1.05">
-                        </label>
-                        <label class="range2">Contrast
+                          <input id="fxExposure_n" type="number" min="0.5" max="2.5" step="0.01" value="1.05">
+                        </div>
+                      </label>
+                      <label>Contrast
+                        <div class="rpair">
                           <input id="fxContrast" type="range" min="0.5" max="3.0" step="0.01" value="1.35">
-                          <input data-num-for="fxContrast" type="number" min="0.5" max="3" step="0.01" value="1.35">
-                        </label>
-                      </div>
+                          <input id="fxContrast_n" type="number" min="0.5" max="3.0" step="0.01" value="1.35">
+                        </div>
+                      </label>
+                    </div>
 
-                      <label class="range2">Saturation
+                    <label>Saturation
+                      <div class="rpair">
                         <input id="fxSat" type="range" min="0" max="3" step="0.01" value="1.25">
-                        <input data-num-for="fxSat" type="number" min="0" max="3" step="0.01" value="1.25">
+                        <input id="fxSat_n" type="number" min="0" max="3" step="0.01" value="1.25">
+                      </div>
+                    </label>
+                  </div>
+                </details>
+
+                <details class="menu" open>
+                  <summary>FX</summary>
+                  <div class="inside">
+                    <div class="miniBtns">
+                      <button id="fxAllOff">All FX Off</button>
+                    </div>
+
+                    <div class="row">
+                      <label class="toggle"><input id="tFeedback" type="checkbox"> Feedback</label>
+                      <label>Affect
+                        <select id="feedbackTarget">
+                          <option value="final" selected>Final</option>
+                          <option value="mix">Mix</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                        </select>
                       </label>
                     </div>
-                  </details>
-
-                  <details class="menu" id="fxCreative">
-                    <summary>Creative</summary>
-                    <div class="inside">
-                      <div class="row">
-                        <label class="toggle"><input id="tFeedback" type="checkbox"> Feedback</label>
-                        <label>Affect
-                          <select id="feedbackTarget">
-                            <option value="final" selected>Final</option>
-                            <option value="mix">Mix</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div class="row">
-                        <label class="range2">Amount
+                    <div class="row">
+                      <label>Amount
+                        <div class="rpair">
                           <input id="feedbackAmt" type="range" min="0" max="0.98" step="0.001" value="0.88">
-                          <input data-num-for="feedbackAmt" type="number" min="0" max="0.98" step="0.001" value="0.88">
-                        </label>
-                        <label class="range2">Zoom
+                          <input id="feedbackAmt_n" type="number" min="0" max="0.98" step="0.001" value="0.88">
+                        </div>
+                      </label>
+                      <label>Zoom
+                        <div class="rpair">
                           <input id="feedbackZoom" type="range" min="-0.08" max="0.12" step="0.001" value="0.06">
-                          <input data-num-for="feedbackZoom" type="number" min="-0.08" max="0.12" step="0.001" value="0.06">
-                        </label>
-                      </div>
-                      <label class="range2">Rotate
-                        <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12">
-                        <input data-num-for="feedbackRot" type="number" min="-2.5" max="2.5" step="0.01" value="0.12">
+                          <input id="feedbackZoom_n" type="number" min="-0.08" max="0.12" step="0.001" value="0.06">
+                        </div>
                       </label>
-
-                      <hr style="border:0;border-top:1px solid rgba(255,255,255,.10);opacity:.8">
-
-                      <div class="row">
-                        <label class="toggle"><input id="tKaleido" type="checkbox"> Kaleido</label>
-                        <label>Affect
-                          <select id="kaleidoTarget">
-                            <option value="final" selected>Final</option>
-                            <option value="mix">Mix</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div class="row">
-                        <label class="range2">Segments
-                          <input id="kSeg" type="range" min="2" max="16" step="1" value="6">
-                          <input data-num-for="kSeg" type="number" min="2" max="16" step="1" value="6">
-                        </label>
-                        <label class="range2">Amount
-                          <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85">
-                          <input data-num-for="kAmt" type="number" min="0" max="1" step="0.01" value="0.85">
-                        </label>
-                      </div>
-                      <label class="range2">Spin
-                        <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0">
-                        <input data-num-for="kSpin" type="number" min="-3" max="3" step="0.01" value="0">
-                      </label>
-
-                      <hr style="border:0;border-top:1px solid rgba(255,255,255,.10);opacity:.8">
-
-                      <div class="row">
-                        <label class="toggle"><input id="tMirror" type="checkbox"> Mirror</label>
-                        <label>Mode
-                          <select id="mirrorMode">
-                            <option value="0" selected>horizontal</option>
-                            <option value="1">vertical</option>
-                            <option value="2">quad</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div class="row">
-                        <label>Affect
-                          <select id="mirrorTarget">
-                            <option value="final" selected>Final</option>
-                            <option value="mix">Mix</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                        <label class="range2">Amount
-                          <input id="mirrorAmt" type="range" min="0" max="1" step="0.01" value="1">
-                          <input data-num-for="mirrorAmt" type="number" min="0" max="1" step="0.01" value="1">
-                        </label>
-                      </div>
-
-                      <hr style="border:0;border-top:1px solid rgba(255,255,255,.10);opacity:.8">
-
-                      <div class="row">
-                        <label class="toggle"><input id="tWarp" type="checkbox"> Warp</label>
-                        <label>Affect
-                          <select id="warpTarget">
-                            <option value="mix" selected>Mix</option>
-                            <option value="final">Final</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div class="row">
-                        <label class="range2">Amount
-                          <input id="warpAmt" type="range" min="0" max="0.15" step="0.001" value="0.03">
-                          <input data-num-for="warpAmt" type="number" min="0" max="0.15" step="0.001" value="0.03">
-                        </label>
-                        <label class="range2">Speed
-                          <input id="warpSpeed" type="range" min="0" max="3" step="0.01" value="1.0">
-                          <input data-num-for="warpSpeed" type="number" min="0" max="3" step="0.01" value="1">
-                        </label>
-                      </div>
-
-                      <hr style="border:0;border-top:1px solid rgba(255,255,255,.10);opacity:.8">
-
-                      <div class="row">
-                        <label class="toggle"><input id="tRGB" type="checkbox"> RGB Shift</label>
-                        <label>Affect
-                          <select id="rgbTarget">
-                            <option value="b">B</option>
-                            <option value="a">A</option>
-                            <option value="mix">Mix</option>
-                            <option value="final" selected>Final</option>
-                          </select>
-                        </label>
-                      </div>
-                      <label class="range2">Amount
-                        <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012">
-                        <input data-num-for="rgbAmt" type="number" min="0" max="0.05" step="0.0005" value="0.012">
-                      </label>
-
-                      <div class="row">
-                        <label class="toggle"><input id="tGlitch" type="checkbox"> Glitch</label>
-                        <label>Affect
-                          <select id="glitchTarget">
-                            <option value="mix" selected>Mix</option>
-                            <option value="final">Final</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                      </div>
-                      <label class="range2">Amount
-                        <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35">
-                        <input data-num-for="glitchAmt" type="number" min="0" max="1" step="0.01" value="0.35">
-                      </label>
-
-                      <div class="row">
-                        <label class="toggle"><input id="tPixel" type="checkbox"> Pixelate</label>
-                        <label>Affect
-                          <select id="pixelTarget">
-                            <option value="final" selected>Final</option>
-                            <option value="mix">Mix</option>
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                          </select>
-                        </label>
-                      </div>
-                      <label class="range2">Size
-                        <input id="pixSize" type="range" min="1" max="220" step="1" value="70">
-                        <input data-num-for="pixSize" type="number" min="1" max="220" step="1" value="70">
-                      </label>
-
-                      <div class="row">
-                        <label class="toggle"><input id="tScan" type="checkbox"> Scanlines</label>
-                        <label class="toggle"><input id="tVig" type="checkbox"> Vignette</label>
-                      </div>
-                      <div class="row">
-                        <label class="range2">Scan
-                          <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35">
-                          <input data-num-for="scanAmt" type="number" min="0" max="1" step="0.01" value="0.35">
-                        </label>
-                        <label class="range2">Vignette
-                          <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55">
-                          <input data-num-for="vigAmt" type="number" min="0" max="1" step="0.01" value="0.55">
-                        </label>
-                      </div>
                     </div>
-                  </details>
-                </div>
-              </details>
+                    <label>Rotate
+                      <div class="rpair">
+                        <input id="feedbackRot" type="range" min="-2.5" max="2.5" step="0.01" value="0.12">
+                        <input id="feedbackRot_n" type="number" min="-2.5" max="2.5" step="0.01" value="0.12">
+                      </div>
+                    </label>
 
-              <div class="statusRow">
-                <span class="badge" id="fxStatus">fx: off</span>
-                <span class="badge" id="deckStatus">decks: …</span>
+                    <div class="row">
+                      <label class="toggle"><input id="tKaleido" type="checkbox"> Kaleido</label>
+                      <label>Affect
+                        <select id="kaleidoTarget">
+                          <option value="final" selected>Final</option>
+                          <option value="mix">Mix</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="row">
+                      <label>Segments
+                        <div class="rpair">
+                          <input id="kSeg" type="range" min="2" max="16" step="1" value="6">
+                          <input id="kSeg_n" type="number" min="2" max="16" step="1" value="6">
+                        </div>
+                      </label>
+                      <label>Amount
+                        <div class="rpair">
+                          <input id="kAmt" type="range" min="0" max="1" step="0.01" value="0.85">
+                          <input id="kAmt_n" type="number" min="0" max="1" step="0.01" value="0.85">
+                        </div>
+                      </label>
+                    </div>
+                    <label>Spin
+                      <div class="rpair">
+                        <input id="kSpin" type="range" min="-3" max="3" step="0.01" value="0">
+                        <input id="kSpin_n" type="number" min="-3" max="3" step="0.01" value="0">
+                      </div>
+                    </label>
+
+                    <div class="row">
+                      <label class="toggle"><input id="tRGB" type="checkbox"> RGB Shift</label>
+                      <label>Affect
+                        <select id="rgbTarget">
+                          <option value="b">B</option>
+                          <option value="a">A</option>
+                          <option value="mix">Mix</option>
+                          <option value="final" selected>Final</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label>Amount
+                      <div class="rpair">
+                        <input id="rgbAmt" type="range" min="0" max="0.05" step="0.0005" value="0.012">
+                        <input id="rgbAmt_n" type="number" min="0" max="0.05" step="0.0005" value="0.012">
+                      </div>
+                    </label>
+
+                    <div class="row">
+                      <label class="toggle"><input id="tGlitch" type="checkbox"> Glitch</label>
+                      <label>Affect
+                        <select id="glitchTarget">
+                          <option value="mix">Mix</option>
+                          <option value="final" selected>Final</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label>Amount
+                      <div class="rpair">
+                        <input id="glitchAmt" type="range" min="0" max="1" step="0.01" value="0.35">
+                        <input id="glitchAmt_n" type="number" min="0" max="1" step="0.01" value="0.35">
+                      </div>
+                    </label>
+
+                    <div class="row">
+                      <label class="toggle"><input id="tPixel" type="checkbox"> Pixelate</label>
+                      <label>Affect
+                        <select id="pixelTarget">
+                          <option value="final" selected>Final</option>
+                          <option value="mix">Mix</option>
+                          <option value="a">A</option>
+                          <option value="b">B</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label>Size
+                      <div class="rpair">
+                        <input id="pixSize" type="range" min="1" max="220" step="1" value="70">
+                        <input id="pixSize_n" type="number" min="1" max="220" step="1" value="70">
+                      </div>
+                    </label>
+
+                    <div class="row">
+                      <label class="toggle"><input id="tScan" type="checkbox"> Scanlines</label>
+                      <label class="toggle"><input id="tVig" type="checkbox"> Vignette</label>
+                    </div>
+                    <div class="row">
+                      <label>Scan amount
+                        <div class="rpair">
+                          <input id="scanAmt" type="range" min="0" max="1" step="0.01" value="0.35">
+                          <input id="scanAmt_n" type="number" min="0" max="1" step="0.01" value="0.35">
+                        </div>
+                      </label>
+                      <label>Vignette amount
+                        <div class="rpair">
+                          <input id="vigAmt" type="range" min="0" max="1" step="0.01" value="0.55">
+                          <input id="vigAmt_n" type="number" min="0" max="1" step="0.01" value="0.55">
+                        </div>
+                      </label>
+                    </div>
+
+                  </div>
+                </details>
+
               </div>
-
-              <details class="menu" id="invMenu">
-                <summary>Invidious</summary>
-                <div class="inside">
-                  <label>Base (default inv.nadeko.net)
-                    <input id="invBaseCustom" type="text" placeholder="https://inv.nadeko.net" value="">
-                  </label>
-                </div>
-              </details>
-            </div>
+            </details>
 
             <details class="menu" open>
-              <summary>Decks</summary>
+              <summary>Layers</summary>
               <div class="inside">
-                <div class="deckTop">
-                  <div class="row">
-                    <label>Send thumbnail → layer
-                      <select id="deckTargetLayer"></select>
-                    </label>
-                    <label>Random → All layers deck
-                      <select id="randomAllDeck"></select>
-                    </label>
-                  </div>
-
-                  <div class="row">
-                    <label>Custom playlist URL
-                      <input id="customPlaylistUrl" type="text" placeholder="…&list=PLxxxx"/>
-                    </label>
-                    <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
-                      <button id="addCustomDeck" class="primary">Add Deck</button>
-                      <button id="reloadAllDecks">Reload</button>
-                    </div>
-                  </div>
-
-                  <div class="row">
-                    <label>Thumbnails per deck
-                      <select id="thumbCount">
-                        <option value="24">24</option>
-                        <option value="48" selected>48</option>
-                        <option value="96">96</option>
-                        <option value="200">200</option>
-                        <option value="999999">All</option>
-                      </select>
-                    </label>
-                    <label class="toggle" style="align-self:end">
-                      <input id="thumbShuffle" type="checkbox" checked>
-                      Shuffle
-                    </label>
-                  </div>
-
-                  <div class="miniBtns">
-                    <button id="randomAllLayers" class="primary">Random → All</button>
-                  </div>
-                </div>
-
-                <div class="deckList" id="deckList"></div>
+                <div class="layerList" id="layerList"></div>
               </div>
             </details>
 
           </div>
         </div>
+
+        <!-- RIGHT: Decks -->
+        <div class="card">
+          <div class="cardBody">
+
+            <details class="menu" open>
+              <summary>Decks</summary>
+              <div class="inside">
+
+                <div class="row">
+                  <label>Send click to layer
+                    <select id="deckTargetLayer"></select>
+                  </label>
+                  <label>Invidious base
+                    <input id="invBaseCustom" type="text" placeholder="optional (default inv.nadeko.net)"/>
+                  </label>
+                </div>
+
+                <div class="row">
+                  <label>Add playlist URL
+                    <input id="customPlaylistUrl" type="text" placeholder="...&list=PLxxxx"/>
+                  </label>
+                  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <button id="addCustomDeck" class="primary">Add Deck</button>
+                    <button id="reloadAllDecks">Reload</button>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <label>Thumbs per deck
+                    <select id="thumbCount">
+                      <option value="24">24</option>
+                      <option value="48" selected>48</option>
+                      <option value="96">96</option>
+                      <option value="200">200</option>
+                      <option value="999999">All</option>
+                    </select>
+                  </label>
+                  <label class="toggle" style="align-self:end">
+                    <input id="thumbShuffle" type="checkbox" checked>
+                    Shuffle
+                  </label>
+                </div>
+
+                <div class="row">
+                  <label>Random → All source
+                    <select id="randomAllDeck"></select>
+                  </label>
+                  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <button id="randomAllLayers" class="primary">Random → All</button>
+                  </div>
+                </div>
+
+                <div class="deckList" id="deckList"></div>
+
+              </div>
+            </details>
+
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -554,9 +641,9 @@
 <script>
 const $ = (id)=>document.getElementById(id);
 
-/* ================
-   Controls open/close
-================ */
+/* =========================
+   Controls open/close + fullscreen
+========================= */
 const controls = $("controls");
 $("btnToggleControls").addEventListener("click", ()=>{
   controls.classList.toggle("open");
@@ -565,7 +652,6 @@ $("btnToggleControls").addEventListener("click", ()=>{
 controls.classList.remove("open");
 $("btnToggleControls").textContent = "Show Controls";
 
-/* Fullscreen stage */
 const stageEl = $("stage");
 function isFullscreen(){ return document.fullscreenElement === stageEl; }
 async function toggleFullscreen(){
@@ -580,44 +666,6 @@ document.addEventListener("fullscreenchange", ()=>{
   resizeCanvas();
 });
 
-/* ================
-   Range <-> Number sync
-================ */
-function bindRangeNumbers(){
-  document.querySelectorAll('input[data-num-for]').forEach(num=>{
-    const rid = num.getAttribute('data-num-for');
-    const rng = $(rid);
-    if (!rng) return;
-
-    // seed number from range
-    num.value = rng.value;
-
-    const clamp = (v)=>{
-      const min = (rng.min!=="" ? Number(rng.min) : -Infinity);
-      const max = (rng.max!=="" ? Number(rng.max) : Infinity);
-      v = Number(v);
-      if (Number.isNaN(v)) v = Number(rng.value);
-      return Math.min(max, Math.max(min, v));
-    };
-
-    rng.addEventListener('input', ()=>{
-      num.value = rng.value;
-    });
-
-    const commit = ()=>{
-      const v = clamp(num.value);
-      rng.value = String(v);
-      num.value = String(v);
-      rng.dispatchEvent(new Event('input', {bubbles:true}));
-      rng.dispatchEvent(new Event('change', {bubbles:true}));
-    };
-    num.addEventListener('change', commit);
-    num.addEventListener('keydown', (e)=>{
-      if (e.key === "Enter") commit();
-    });
-  });
-}
-
 /* =========================
    Link Mixer
 ========================= */
@@ -631,7 +679,7 @@ const BLENDS = [
 ];
 
 let linkLayerCount = 2;
-const linkLayers = []; // {el, kind:"yt"|"cap", iframe?, video?, url, capStream?, ui, auto}
+const linkLayers = []; // {el, iframe, url, ui, auto}
 let layerAutoTimers = new Map();
 
 function fillBlendOptions(sel, def="difference"){
@@ -639,7 +687,6 @@ function fillBlendOptions(sel, def="difference"){
   sel.value = def;
 }
 
-/* YouTube embed helpers */
 function extractVideoId(url){
   if (!url) return null;
   const raw = url.trim();
@@ -652,6 +699,7 @@ function extractVideoId(url){
   }catch(e){}
   return null;
 }
+
 function buildEmbedSrc(videoId){
   const origin = encodeURIComponent(location.origin);
   const loopOn = $("loopVideos").value === "on";
@@ -667,13 +715,20 @@ function makeLinkLayer(i){
   return el;
 }
 
+function mountLinkIframe(i){
+  const L = linkLayers[i];
+  const vid = extractVideoId(L.url);
+  if (!vid){ L.el.innerHTML=""; L.iframe=null; return; }
+  const src = buildEmbedSrc(vid);
+  L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
+  L.iframe = L.el.querySelector("iframe");
+}
+
 function applyLinkStyle(i){
   const L = linkLayers[i];
   if (!L) return;
-
   const tap = $("tapUI").value === "on";
   L.el.style.pointerEvents = tap ? "auto" : "none";
-
   L.el.style.opacity = L.ui.op;
   L.el.style.mixBlendMode = L.ui.blend;
 
@@ -684,36 +739,8 @@ function applyLinkStyle(i){
   const ty = (0.5 - cy) * 100;
   L.el.style.transformOrigin = `${cx*100}% ${cy*100}%`;
   L.el.style.transform = `translate(${tx}%, ${ty}%) scale(${z})`;
+
   L.el.style.filter = `invert(${L.ui.inv}) contrast(${L.ui.ct}) saturate(${L.ui.sat}) hue-rotate(${L.ui.hue}deg)`;
-}
-
-function mountYouTube(i){
-  const L = linkLayers[i];
-  const vid = extractVideoId(L.url);
-  L.kind = "yt";
-  L.capStream = null;
-  L.video = null;
-
-  if (!vid){
-    L.el.innerHTML = "";
-    L.iframe = null;
-    return;
-  }
-  const src = buildEmbedSrc(vid);
-  L.el.innerHTML = `<iframe data-layer="${i}" allow="autoplay; encrypted-media; picture-in-picture" src="${src}"></iframe>`;
-  L.iframe = L.el.querySelector("iframe");
-}
-
-function mountCaptureVideo(i, stream){
-  const L = linkLayers[i];
-  L.kind = "cap";
-  L.url = "";
-  L.iframe = null;
-  L.capStream = stream;
-
-  L.el.innerHTML = `<video autoplay muted playsinline></video>`;
-  L.video = L.el.querySelector("video");
-  L.video.srcObject = stream;
 }
 
 /* YouTube JS API postMessage controls */
@@ -728,28 +755,39 @@ function ytCommand(i, cmd){
     );
   }catch(e){}
 }
-function playLayer(i){ ytCommand(i,"playVideo"); $("status").textContent=`play L${i+1}`; }
-function pauseLayer(i){ ytCommand(i,"pauseVideo"); $("status").textContent=`pause L${i+1}`; }
+function playLayer(i){ ytCommand(i,"playVideo"); $("status").textContent=`Status: play L${i+1}`; }
+function pauseLayer(i){ ytCommand(i,"pauseVideo"); $("status").textContent=`Status: pause L${i+1}`; }
 
-/* Push video to a specific layer, OR use dropdown */
-function pushVideoToLayer(videoId, layerIndex=null){
-  const i = (layerIndex === null)
-    ? (parseInt($("deckTargetLayer").value, 10) || 0)
-    : layerIndex;
+function stopAllLayerAuto(){
+  for (const [i, timer] of layerAutoTimers.entries()) clearInterval(timer);
+  layerAutoTimers.clear();
+}
+function syncLayerAuto(i){
+  const L = linkLayers[i];
+  if (!L) return;
+  if (layerAutoTimers.has(i)){
+    clearInterval(layerAutoTimers.get(i));
+    layerAutoTimers.delete(i);
+  }
+  if (!L.auto.on) return;
+  const ms = Math.max(5000, L.auto.ms || 30000);
+  const timer = setInterval(()=>pickRandomIntoLayer(i), ms);
+  layerAutoTimers.set(i, timer);
+}
 
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
-  linkLayers[i].url = url;
-
-  const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
-  if (inp) inp.value = url;
-
-  mountYouTube(i);
-  applyLinkStyle(i);
-  $("status").textContent = `set L${i+1}`;
+function updateDeckTargetLayerOptions(){
+  const sel = $("deckTargetLayer");
+  sel.innerHTML = "";
+  for (let i=0;i<linkLayerCount;i++){
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = `Layer ${i+1}`;
+    sel.appendChild(o);
+  }
 }
 
 /* =========================
-   Decks (Invidious playlist → video IDs)
+   Decks (Invidious playlists)
 ========================= */
 const DEFAULT_DECKS = [
   { key:"trippy", name:"Trippy", url:"https://www.youtube.com/watch?v=sLkwdr74FVI&list=PLuyTQuSXZ5EUeHHskJJmWqicuyKJK4kc2" },
@@ -762,7 +800,8 @@ let DEFAULT_DECK_KEY = "trippy";
 
 function getInvidiousBase(){
   const custom = ($("invBaseCustom").value || "").trim().replace(/\/+$/,'');
-  return custom || "https://inv.nadeko.net";
+  if (custom) return custom;
+  return "https://inv.nadeko.net";
 }
 function extractPlaylistId(anyUrl){
   if (!anyUrl) return null;
@@ -801,7 +840,7 @@ async function fetchPlaylistAllVideos(listId){
 function addDeck(key, name, url){
   const listId = extractPlaylistId(url);
   if (!listId){
-    $("deckStatus").textContent = "deck url invalid";
+    $("deckStatus").textContent = "Decks: invalid playlist";
     return false;
   }
   decks[key] = { key, name, url, listId, items: [] };
@@ -811,7 +850,7 @@ function initDefaultDecks(){ DEFAULT_DECKS.forEach(d=>addDeck(d.key, d.name, d.u
 async function loadDeck(key){
   const D = decks[key];
   if (!D || !D.listId) return;
-  $("deckStatus").textContent = `loading ${D.name}…`;
+  $("deckStatus").textContent = `Decks: loading ${D.name}…`;
   try{
     const items = await fetchPlaylistAllVideos(D.listId);
     D.items = items.map(it=>({
@@ -819,10 +858,10 @@ async function loadDeck(key){
       title: it.title || it.videoId,
       thumb: deckThumbUrl(it.videoId)
     }));
-    $("deckStatus").textContent = `loaded ${D.name} (${D.items.length})`;
+    $("deckStatus").textContent = `Decks: loaded ${D.name} (${D.items.length})`;
   }catch(e){
     console.error(e);
-    $("deckStatus").textContent = `failed ${D.name}`;
+    $("deckStatus").textContent = `Decks: failed ${D.name}`;
     D.items = [];
   }
 }
@@ -843,20 +882,10 @@ function refreshDeckDropdowns(){
   document.querySelectorAll(`select[data-f="autoDeck"]`).forEach(sel=>{
     const i = parseInt(sel.getAttribute("data-i"),10);
     const L = linkLayers[i];
-    const c = L?.auto?.deckKey || DEFAULT_DECK_KEY;
+    const cur2 = L?.auto?.deckKey || DEFAULT_DECK_KEY;
     sel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
-    sel.value = decks[c] ? c : DEFAULT_DECK_KEY;
+    sel.value = decks[cur2] ? cur2 : DEFAULT_DECK_KEY;
   });
-}
-function updateDeckTargetLayerOptions(){
-  const sel = $("deckTargetLayer");
-  sel.innerHTML = "";
-  for (let i=0;i<linkLayerCount;i++){
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = `Layer ${i+1}`;
-    sel.appendChild(o);
-  }
 }
 function renderDecks(){
   const wrap = $("deckList");
@@ -873,12 +902,12 @@ function renderDecks(){
       <div class="deckHead">
         <div>${D.name}</div>
         <div class="miniBtns">
-          <button data-act="load" data-k="${key}">Load</button>
-          <button data-act="default" data-k="${key}">Default</button>
+          <button data-act="reloadDeck" data-k="${key}">Load</button>
+          <button data-act="setDefault" data-k="${key}">Set Default</button>
         </div>
       </div>
       <div class="thumbGrid" id="thumbGrid_${key}">
-        <div class="small" style="grid-column:1/-1;">${D.items?.length ? "" : "not loaded"}</div>
+        <div class="small" style="grid-column:1/-1;">${D.items?.length ? "" : "Not loaded"}</div>
       </div>
     `;
     wrap.appendChild(el);
@@ -894,8 +923,7 @@ function renderDecks(){
         t.className = "thumb";
         t.innerHTML = `
           <img loading="lazy" referrerpolicy="no-referrer"
-            src="${it.thumb}" alt=""
-            onerror="this.onerror=null; this.src='https://i.ytimg.com/vi/${it.videoId}/hqdefault.jpg';">
+               src="${it.thumb}" alt="">
           <div class="cap">${it.title || it.videoId}</div>
         `;
         t.addEventListener("click", ()=>pushVideoToLayer(it.videoId, null));
@@ -906,71 +934,101 @@ function renderDecks(){
 
   refreshDeckDropdowns();
 }
+
 $("deckList").addEventListener("click", async (e)=>{
   const b = e.target.closest("button[data-act]");
   if (!b) return;
   const act = b.getAttribute("data-act");
   const k = b.getAttribute("data-k");
-  if (act==="load"){
+  if (act==="reloadDeck"){
     await loadDeck(k);
     renderDecks();
   }
-  if (act==="default"){
+  if (act==="setDefault"){
     DEFAULT_DECK_KEY = k;
-    $("deckStatus").textContent = `default ${decks[k].name}`;
+    $("deckStatus").textContent = `Decks: default = ${decks[k].name}`;
     refreshDeckDropdowns();
   }
 });
+
 $("addCustomDeck").addEventListener("click", async ()=>{
   const url = $("customPlaylistUrl").value.trim();
   if (!url) return;
   const listId = extractPlaylistId(url);
-  if (!listId){ $("deckStatus").textContent = "deck url invalid"; return; }
+  if (!listId){
+    $("deckStatus").textContent = "Decks: invalid playlist";
+    return;
+  }
   const key = "custom_" + Math.random().toString(16).slice(2,8);
   addDeck(key, "Custom", url);
   await loadDeck(key);
   renderDecks();
   $("customPlaylistUrl").value = "";
 });
+
 $("reloadAllDecks").addEventListener("click", async ()=>{
-  $("deckStatus").textContent = "loading…";
+  $("deckStatus").textContent = "Decks: loading…";
   for (const k of Object.keys(decks)) await loadDeck(k);
   renderDecks();
-  $("deckStatus").textContent = "loaded";
+  $("deckStatus").textContent = "Decks: loaded";
 });
+
 $("thumbCount").addEventListener("change", renderDecks);
 $("thumbShuffle").addEventListener("change", renderDecks);
 
 function pickRandomFromDeck(key){
   const D = decks[key];
   if (!D || !Array.isArray(D.items) || !D.items.length) return null;
-  return D.items[Math.floor(Math.random()*D.items.length)].videoId;
+  const idx = Math.floor(Math.random() * D.items.length);
+  return D.items[idx].videoId;
+}
+function pushVideoToLayer(videoId, layerIndex=null){
+  const i = (layerIndex === null)
+    ? (parseInt($("deckTargetLayer").value, 10) || 0)
+    : layerIndex;
+
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
+  linkLayers[i].url = url;
+
+  const inp = document.querySelector(`input[data-f="url"][data-i="${i}"]`);
+  if (inp) inp.value = url;
+
+  mountLinkIframe(i);
+  applyLinkStyle(i);
+  $("status").textContent = `Status: set L${i+1}`;
 }
 function pickRandomIntoLayer(i){
   const L = linkLayers[i];
   const deckKey = L.auto.deckKey || DEFAULT_DECK_KEY;
   const vid = pickRandomFromDeck(deckKey);
-  if (!vid){ $("status").textContent = `deck not loaded`; return; }
+  if (!vid){
+    $("status").textContent = `Status: deck not loaded`;
+    return;
+  }
   pushVideoToLayer(vid, i);
 }
 function randomizeAllLayers(){
   const deckKey = $("randomAllDeck").value || DEFAULT_DECK_KEY;
   const D = decks[deckKey];
-  if (!D || !D.items?.length){ $("status").textContent = `deck not loaded`; return; }
+  if (!D || !Array.isArray(D.items) || !D.items.length){
+    $("status").textContent = `Status: deck not loaded`;
+    return;
+  }
   const vids = D.items.map(x=>x.videoId);
   const shuffled = vids.slice().sort(()=>Math.random()-0.5);
   for (let i=0;i<linkLayerCount;i++){
     const vid = shuffled[i] || vids[Math.floor(Math.random()*vids.length)];
     pushVideoToLayer(vid, i);
   }
-  $("status").textContent = `random → all`;
+  $("status").textContent = `Status: random → all`;
 }
 $("randomAllLayers").addEventListener("click", randomizeAllLayers);
 
-/* Quick random */
+/* Quick random buttons */
 function updateQuickButtons(){
   for (let i=1;i<=5;i++){
     const b = $("qRand"+i);
+    if (!b) continue;
     b.style.display = (linkLayerCount >= i) ? "inline-flex" : "none";
   }
 }
@@ -981,297 +1039,158 @@ $("qRand4").addEventListener("click", ()=>pickRandomIntoLayer(3));
 $("qRand5").addEventListener("click", ()=>pickRandomIntoLayer(4));
 $("qRandAll").addEventListener("click", ()=>randomizeAllLayers());
 
-function stopAllLayerAuto(){
-  for (const [i, timer] of layerAutoTimers.entries()) clearInterval(timer);
-  layerAutoTimers.clear();
-}
-function syncLayerAuto(i){
-  const L = linkLayers[i];
-  if (!L) return;
-  if (layerAutoTimers.has(i)){
-    clearInterval(layerAutoTimers.get(i));
-    layerAutoTimers.delete(i);
-  }
-  if (!L.auto.on) return;
-  const ms = Math.max(5000, L.auto.ms || 30000);
-  const timer = setInterval(()=>pickRandomIntoLayer(i), ms);
-  layerAutoTimers.set(i, timer);
-}
-
-/* =========================
-   Capture per-layer + FX overlay
-========================= */
-let capStreamA = null, capStreamB = null; // used by WebGL
-const capVideoA = document.createElement("video");
-const capVideoB = document.createElement("video");
-capVideoA.muted=true; capVideoB.muted=true;
-capVideoA.playsInline=true; capVideoB.playsInline=true;
-
-let capLayerA = -1;
-let capLayerB = -1;
-
-function hasAnyCapture(){
-  return !!capStreamA || !!capStreamB;
-}
-function setCaptureUI(){
-  $("capBadge").textContent = hasAnyCapture() ? "capture: on" : "capture: off";
-  $("fxStatus").textContent = hasAnyCapture() ? "fx: ready" : "fx: off";
-  $("fxOut").style.display = hasAnyCapture() ? "block" : "none";
-
-  // FX menus exist but should “feel” unavailable until capture exists
-  const dock = $("fxDock");
-  dock.classList.toggle("disabled", !hasAnyCapture());
-}
-setCaptureUI();
-
-async function startCaptureToLayer(which, layerIndex){
-  try{
-    // stop existing for that channel
-    if (which==="A") stopCaptureA();
-    else stopCaptureB();
-
-    const stream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:60 }, audio:false });
-    const tr = stream.getVideoTracks()[0];
-    tr.addEventListener("ended", ()=>{ (which==="A") ? stopCaptureA() : stopCaptureB(); });
-
-    if (which==="A"){
-      capStreamA = stream;
-      capLayerA = layerIndex;
-      capVideoA.srcObject = stream;
-      await capVideoA.play();
-    } else {
-      capStreamB = stream;
-      capLayerB = layerIndex;
-      capVideoB.srcObject = stream;
-      await capVideoB.play();
-    }
-
-    // also mount a live preview in that layer
-    mountCaptureVideo(layerIndex, stream);
-    applyLinkStyle(layerIndex);
-
-    $("status").textContent = `captured ${which} → L${layerIndex+1}`;
-    setCaptureUI();
-  }catch(e){
-    $("status").textContent = `capture canceled`;
-    setCaptureUI();
-  }
-}
-function stopCaptureA(){
-  if (capStreamA){
-    try{ capStreamA.getTracks().forEach(t=>t.stop()); }catch(e){}
-  }
-  capStreamA = null;
-  capVideoA.srcObject = null;
-
-  // restore layer A if it was a capture layer
-  if (capLayerA >= 0 && linkLayers[capLayerA]){
-    linkLayers[capLayerA].url = DEFAULT_LINKS[capLayerA] || DEFAULT_LINKS[1];
-    mountYouTube(capLayerA);
-    applyLinkStyle(capLayerA);
-  }
-  capLayerA = -1;
-}
-function stopCaptureB(){
-  if (capStreamB){
-    try{ capStreamB.getTracks().forEach(t=>t.stop()); }catch(e){}
-  }
-  capStreamB = null;
-  capVideoB.srcObject = null;
-
-  if (capLayerB >= 0 && linkLayers[capLayerB]){
-    linkLayers[capLayerB].url = DEFAULT_LINKS[capLayerB] || DEFAULT_LINKS[1];
-    mountYouTube(capLayerB);
-    applyLinkStyle(capLayerB);
-  }
-  capLayerB = -1;
-}
-function stopAllCapture(){
-  stopCaptureA();
-  stopCaptureB();
-  $("status").textContent = "capture stopped";
-  setCaptureUI();
-}
-$("stopAllCapture").addEventListener("click", stopAllCapture);
-
-/* =========================
-   Link layers UI
-========================= */
+/* Build Layer UI */
 function rebuildLinkUI(){
   const list = $("layerList");
   list.innerHTML = "";
+
   for (let i=0;i<linkLayerCount;i++){
-    const L = linkLayers[i];
-
-    const item = document.createElement("div");
+    const item = document.createElement("details");
     item.className="layerItem";
+    item.open = false;
     item.innerHTML = `
-      <details class="menu" open>
-        <summary>Layer ${i+1}</summary>
-        <div class="inside">
-          <div class="miniBtns">
-            <button data-act="play" data-i="${i}">Play</button>
-            <button data-act="pause" data-i="${i}">Pause</button>
-            <button data-act="pickRandom" data-i="${i}" class="primary">Random</button>
-            <button data-act="apply" data-i="${i}">Apply</button>
-          </div>
+      <summary>
+        <span>Layer ${i+1}</span>
+        <span class="miniBtns">
+          <button type="button" data-act="play" data-i="${i}">Play</button>
+          <button type="button" data-act="pause" data-i="${i}">Pause</button>
+          <button type="button" data-act="pickRandom" data-i="${i}" class="primary">Random</button>
+          <button type="button" data-act="apply" data-i="${i}">Apply</button>
+        </span>
+      </summary>
+      <div class="inside">
+        <label>YouTube URL or ID <input type="text" data-f="url" data-i="${i}"/></label>
 
-          <details class="menu" open>
-            <summary>Source</summary>
-            <div class="inside">
-              <label>YouTube URL or ID
-                <input type="text" data-f="url" data-i="${i}"/>
-              </label>
-              <div class="miniBtns">
-                <button data-act="capA" data-i="${i}" class="primary">Capture A → this</button>
-                <button data-act="capB" data-i="${i}" class="primary">Capture B → this</button>
-              </div>
+        <div class="row">
+          <label>Opacity
+            <div class="rpair">
+              <input type="range" min="0" max="1" step="0.01" data-f="op" data-i="${i}"/>
+              <input type="number" min="0" max="1" step="0.01" data-f="op_n" data-i="${i}"/>
             </div>
-          </details>
-
-          <details class="menu">
-            <summary>Blend</summary>
-            <div class="inside">
-              <div class="row">
-                <label>Opacity</label>
-                <div class="range2">
-                  <input type="range" min="0" max="1" step="0.01" data-f="op" data-i="${i}"/>
-                  <input type="number" min="0" max="1" step="0.01" data-num-for="L${i}_op">
-                </div>
-              </div>
-              <label>Blend mode
-                <select data-f="blend" data-i="${i}"></select>
-              </label>
-            </div>
-          </details>
-
-          <details class="menu">
-            <summary>Color</summary>
-            <div class="inside">
-              <div class="row">
-                <label>Invert</label>
-                <div class="range2">
-                  <input type="range" min="0" max="1" step="0.01" data-f="inv" data-i="${i}"/>
-                  <input type="number" min="0" max="1" step="0.01" data-num-for="L${i}_inv">
-                </div>
-              </div>
-              <div class="row">
-                <label>Contrast</label>
-                <div class="range2">
-                  <input type="range" min="0.5" max="3" step="0.01" data-f="ct" data-i="${i}"/>
-                  <input type="number" min="0.5" max="3" step="0.01" data-num-for="L${i}_ct">
-                </div>
-              </div>
-              <div class="row">
-                <label>Saturation</label>
-                <div class="range2">
-                  <input type="range" min="0" max="3" step="0.01" data-f="sat" data-i="${i}"/>
-                  <input type="number" min="0" max="3" step="0.01" data-num-for="L${i}_sat">
-                </div>
-              </div>
-              <div class="row">
-                <label>Hue</label>
-                <div class="range2">
-                  <input type="range" min="-180" max="180" step="1" data-f="hue" data-i="${i}"/>
-                  <input type="number" min="-180" max="180" step="1" data-num-for="L${i}_hue">
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <details class="menu">
-            <summary>Crop</summary>
-            <div class="inside">
-              <div class="row">
-                <label>Center X</label>
-                <div class="range2">
-                  <input type="range" min="0" max="1" step="0.001" data-f="cx" data-i="${i}"/>
-                  <input type="number" min="0" max="1" step="0.001" data-num-for="L${i}_cx">
-                </div>
-              </div>
-              <div class="row">
-                <label>Center Y</label>
-                <div class="range2">
-                  <input type="range" min="0" max="1" step="0.001" data-f="cy" data-i="${i}"/>
-                  <input type="number" min="0" max="1" step="0.001" data-num-for="L${i}_cy">
-                </div>
-              </div>
-              <div class="row">
-                <label>Zoom</label>
-                <div class="range2">
-                  <input type="range" min="1" max="5" step="0.01" data-f="zoom" data-i="${i}"/>
-                  <input type="number" min="1" max="5" step="0.01" data-num-for="L${i}_zoom">
-                </div>
-              </div>
-            </div>
-          </details>
-
-          <details class="menu">
-            <summary>Auto Random</summary>
-            <div class="inside">
-              <div class="row">
-                <label class="toggle"><input type="checkbox" data-f="autoOn" data-i="${i}"> Enable</label>
-                <label>Deck
-                  <select data-f="autoDeck" data-i="${i}"></select>
-                </label>
-              </div>
-              <label class="range2">Seconds
-                <input type="range" min="5" max="600" step="1" data-f="autoSec" data-i="${i}"/>
-                <input type="number" min="5" max="600" step="1" data-num-for="L${i}_autoSec">
-              </label>
-            </div>
-          </details>
+          </label>
+          <label>Blend <select data-f="blend" data-i="${i}"></select></label>
         </div>
-      </details>
+
+        <div class="row">
+          <label>Invert
+            <div class="rpair">
+              <input type="range" min="0" max="1" step="0.01" data-f="inv" data-i="${i}"/>
+              <input type="number" min="0" max="1" step="0.01" data-f="inv_n" data-i="${i}"/>
+            </div>
+          </label>
+          <label>Contrast
+            <div class="rpair">
+              <input type="range" min="0.5" max="3" step="0.01" data-f="ct" data-i="${i}"/>
+              <input type="number" min="0.5" max="3" step="0.01" data-f="ct_n" data-i="${i}"/>
+            </div>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Saturation
+            <div class="rpair">
+              <input type="range" min="0" max="3" step="0.01" data-f="sat" data-i="${i}"/>
+              <input type="number" min="0" max="3" step="0.01" data-f="sat_n" data-i="${i}"/>
+            </div>
+          </label>
+          <label>Hue
+            <div class="rpair">
+              <input type="range" min="-180" max="180" step="1" data-f="hue" data-i="${i}"/>
+              <input type="number" min="-180" max="180" step="1" data-f="hue_n" data-i="${i}"/>
+            </div>
+          </label>
+        </div>
+
+        <details class="menu">
+          <summary>Crop / Zoom</summary>
+          <div class="inside">
+            <div class="row">
+              <label>Center X
+                <div class="rpair">
+                  <input type="range" min="0" max="1" step="0.001" data-f="cx" data-i="${i}"/>
+                  <input type="number" min="0" max="1" step="0.001" data-f="cx_n" data-i="${i}"/>
+                </div>
+              </label>
+              <label>Center Y
+                <div class="rpair">
+                  <input type="range" min="0" max="1" step="0.001" data-f="cy" data-i="${i}"/>
+                  <input type="number" min="0" max="1" step="0.001" data-f="cy_n" data-i="${i}"/>
+                </div>
+              </label>
+            </div>
+            <label>Zoom
+              <div class="rpair">
+                <input type="range" min="1" max="5" step="0.01" data-f="zoom" data-i="${i}"/>
+                <input type="number" min="1" max="5" step="0.01" data-f="zoom_n" data-i="${i}"/>
+              </div>
+            </label>
+          </div>
+        </details>
+
+        <details class="menu">
+          <summary>Auto Random</summary>
+          <div class="inside">
+            <div class="row">
+              <label class="toggle"><input type="checkbox" data-f="autoOn" data-i="${i}"> Enable</label>
+              <label>Deck
+                <select data-f="autoDeck" data-i="${i}"></select>
+              </label>
+            </div>
+            <label>Timer (sec)
+              <div class="rpair">
+                <input type="range" min="5" max="600" step="1" data-f="autoSec" data-i="${i}"/>
+                <input type="number" min="5" max="600" step="1" data-f="autoSec_n" data-i="${i}"/>
+              </div>
+            </label>
+          </div>
+        </details>
+
+        <details class="menu">
+          <summary>Capture (sets A/B)</summary>
+          <div class="inside">
+            <div class="miniBtns">
+              <button type="button" data-act="capA" data-i="${i}" class="primary">Capture A</button>
+              <button type="button" data-act="capB" data-i="${i}" class="primary">Capture B</button>
+              <button type="button" data-act="stopCap" data-i="${i}">Stop</button>
+            </div>
+            <div class="small">Pick “This Tab” or a window.</div>
+          </div>
+        </details>
+
+      </div>
     `;
     list.appendChild(item);
 
-    // seed values
-    item.querySelector(`[data-f="url"][data-i="${i}"]`).value = L.url || "";
-    item.querySelector(`[data-f="op"][data-i="${i}"]`).value = L.ui.op;
-    item.querySelector(`[data-f="inv"][data-i="${i}"]`).value = L.ui.inv;
-    item.querySelector(`[data-f="ct"][data-i="${i}"]`).value = L.ui.ct;
-    item.querySelector(`[data-f="sat"][data-i="${i}"]`).value = L.ui.sat;
-    item.querySelector(`[data-f="hue"][data-i="${i}"]`).value = L.ui.hue;
-    item.querySelector(`[data-f="cx"][data-i="${i}"]`).value = L.ui.cx ?? 0.5;
-    item.querySelector(`[data-f="cy"][data-i="${i}"]`).value = L.ui.cy ?? 0.5;
-    item.querySelector(`[data-f="zoom"][data-i="${i}"]`).value = L.ui.zoom ?? 1;
+    const L = linkLayers[i];
+    item.querySelector(`[data-f="url"][data-i="${i}"]`).value = L.url;
+
+    const setPair = (f, v)=>{
+      const r = item.querySelector(`input[data-f="${f}"][data-i="${i}"]`);
+      const n = item.querySelector(`input[data-f="${f}_n"][data-i="${i}"]`);
+      if (r) r.value = v;
+      if (n) n.value = v;
+    };
+
+    setPair("op", L.ui.op);
+    setPair("inv", L.ui.inv);
+    setPair("ct", L.ui.ct);
+    setPair("sat", L.ui.sat);
+    setPair("hue", L.ui.hue);
+
+    setPair("cx", L.ui.cx ?? 0.5);
+    setPair("cy", L.ui.cy ?? 0.5);
+    setPair("zoom", L.ui.zoom ?? 1);
 
     const sel = item.querySelector(`select[data-f="blend"][data-i="${i}"]`);
     fillBlendOptions(sel, L.ui.blend);
 
     item.querySelector(`[data-f="autoOn"][data-i="${i}"]`).checked = !!L.auto.on;
-    item.querySelector(`[data-f="autoSec"][data-i="${i}"]`).value = Math.round((L.auto.ms||30000)/1000);
+    const sec = Math.round((L.auto.ms||30000)/1000);
+    setPair("autoSec", sec);
 
     const deckSel = item.querySelector(`select[data-f="autoDeck"][data-i="${i}"]`);
     deckSel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
     deckSel.value = L.auto.deckKey || DEFAULT_DECK_KEY;
-
-    // bind local number inputs in this layer
-    const pairs = [
-      ["op", "L"+i+"_op"], ["inv","L"+i+"_inv"], ["ct","L"+i+"_ct"], ["sat","L"+i+"_sat"], ["hue","L"+i+"_hue"],
-      ["cx","L"+i+"_cx"], ["cy","L"+i+"_cy"], ["zoom","L"+i+"_zoom"], ["autoSec","L"+i+"_autoSec"]
-    ];
-    for (const [f, numKey] of pairs){
-      const rng = item.querySelector(`[data-f="${f}"][data-i="${i}"]`);
-      const num = item.querySelector(`[data-num-for="${numKey}"]`);
-      if (!rng || !num) continue;
-      num.value = rng.value;
-      rng.addEventListener("input", ()=>{ num.value = rng.value; });
-      const commit=()=>{
-        let v = Number(num.value);
-        if (Number.isNaN(v)) v = Number(rng.value);
-        const min = (rng.min!==""?Number(rng.min):-Infinity);
-        const max = (rng.max!==""?Number(rng.max): Infinity);
-        v = Math.min(max, Math.max(min, v));
-        rng.value = String(v);
-        num.value = String(v);
-        rng.dispatchEvent(new Event("input",{bubbles:true}));
-        rng.dispatchEvent(new Event("change",{bubbles:true}));
-      };
-      num.addEventListener("change", commit);
-      num.addEventListener("keydown", (e)=>{ if (e.key==="Enter") commit(); });
-    }
   }
 
   updateDeckTargetLayerOptions();
@@ -1288,10 +1207,7 @@ function rebuildLinkLayers(){
     const el = makeLinkLayer(i);
     linkLayers.push({
       el,
-      kind: "yt",
       iframe: null,
-      video: null,
-      capStream: null,
       url: DEFAULT_LINKS[i] || DEFAULT_LINKS[1],
       ui: {
         op:i===0?1:0.85,
@@ -1304,36 +1220,73 @@ function rebuildLinkLayers(){
       },
       auto: { on:false, ms:30000, deckKey: DEFAULT_DECK_KEY }
     });
-    mountYouTube(i);
+    mountLinkIframe(i);
     applyLinkStyle(i);
   }
+
   rebuildLinkUI();
 }
 
-$("addLayer").addEventListener("click", ()=>{
-  if (linkLayerCount<5){
-    linkLayerCount++;
-    rebuildLinkLayers();
-    renderDecks();
-  }
-});
-$("removeLayer").addEventListener("click", ()=>{
-  if (linkLayerCount>2){
-    linkLayerCount--;
-    rebuildLinkLayers();
-    renderDecks();
-  }
-});
-$("reloadLinks").addEventListener("click", ()=>{
-  for (let i=0;i<linkLayerCount;i++){
-    if (linkLayers[i].kind === "yt"){
-      mountYouTube(i);
-    }
-    applyLinkStyle(i);
-  }
-});
+$("addLayer").addEventListener("click", ()=>{ if (linkLayerCount<5){ linkLayerCount++; rebuildLinkLayers(); renderDecks(); }});
+$("removeLayer").addEventListener("click", ()=>{ if (linkLayerCount>2){ linkLayerCount--; rebuildLinkLayers(); renderDecks(); }});
+$("reloadLinks").addEventListener("click", ()=>{ for (let i=0;i<linkLayerCount;i++){ mountLinkIframe(i); applyLinkStyle(i);} });
 $("tapUI").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) applyLinkStyle(i); });
-$("loopVideos").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) if (linkLayers[i].kind==="yt") mountYouTube(i); });
+$("loopVideos").addEventListener("change", ()=>{ for (let i=0;i<linkLayerCount;i++) mountLinkIframe(i); });
+
+/* Layer input sync (range<->number + values) */
+function syncPair(rangeEl, numEl){
+  if (!rangeEl || !numEl) return;
+  const clamp = (v)=>{
+    let x = Number(v);
+    if (Number.isNaN(x)) x = Number(rangeEl.value);
+    const mn = (rangeEl.min!==""?Number(rangeEl.min):-Infinity);
+    const mx = (rangeEl.max!==""?Number(rangeEl.max):Infinity);
+    x = Math.min(mx, Math.max(mn, x));
+    return x;
+  };
+  rangeEl.addEventListener("input", ()=>{
+    numEl.value = rangeEl.value;
+    rangeEl.dispatchEvent(new Event("rangePairChanged", {bubbles:true}));
+  });
+  numEl.addEventListener("change", ()=>{
+    const v = clamp(numEl.value);
+    rangeEl.value = v;
+    numEl.value = v;
+    rangeEl.dispatchEvent(new Event("rangePairChanged", {bubbles:true}));
+  });
+}
+
+function initAllPairs(){
+  // global pairs with _n suffix
+  document.querySelectorAll('input[type="range"][id]').forEach(r=>{
+    const n = $(r.id + "_n");
+    if (n) syncPair(r,n);
+  });
+}
+
+$("layerList").addEventListener("rangePairChanged", (e)=>{
+  const t = e.target; // range
+  const i = parseInt(t.getAttribute("data-i"),10);
+  const f = t.getAttribute("data-f");
+  if (Number.isNaN(i)||!f) return;
+  const L=linkLayers[i]; if (!L) return;
+
+  const v = t.value;
+
+  if (f==="op") L.ui.op=parseFloat(v);
+  if (f==="inv") L.ui.inv=parseFloat(v);
+  if (f==="ct") L.ui.ct=parseFloat(v);
+  if (f==="sat") L.ui.sat=parseFloat(v);
+  if (f==="hue") L.ui.hue=parseInt(v,10);
+
+  if (f==="cx") L.ui.cx=parseFloat(v);
+  if (f==="cy") L.ui.cy=parseFloat(v);
+  if (f==="zoom") L.ui.zoom=parseFloat(v);
+
+  if (f==="autoSec") { L.auto.ms = Math.max(5000, parseInt(v,10)*1000); syncLayerAuto(i); }
+
+  applyLinkStyle(i);
+});
 
 $("layerList").addEventListener("input", (e)=>{
   const t=e.target;
@@ -1342,58 +1295,130 @@ $("layerList").addEventListener("input", (e)=>{
   if (Number.isNaN(i)||!f) return;
   const L=linkLayers[i]; if (!L) return;
 
-  if (f==="url"){
-    L.url=t.value;
-  }
-  if (f==="op") L.ui.op=parseFloat(t.value);
-  if (f==="blend") L.ui.blend=t.value;
-  if (f==="inv") L.ui.inv=parseFloat(t.value);
-  if (f==="ct") L.ui.ct=parseFloat(t.value);
-  if (f==="sat") L.ui.sat=parseFloat(t.value);
-  if (f==="hue") L.ui.hue=parseInt(t.value,10);
-  if (f==="cx") L.ui.cx=parseFloat(t.value);
-  if (f==="cy") L.ui.cy=parseFloat(t.value);
-  if (f==="zoom") L.ui.zoom=parseFloat(t.value);
+  if (f==="url") L.url=t.value;
 
   if (f==="autoOn") { L.auto.on = t.checked; syncLayerAuto(i); }
-  if (f==="autoSec") { L.auto.ms = Math.max(5000, parseInt(t.value,10)*1000); syncLayerAuto(i); }
   if (f==="autoDeck") { L.auto.deckKey = t.value; syncLayerAuto(i); }
 
-  applyLinkStyle(i);
+  if (f==="blend") { L.ui.blend=t.value; applyLinkStyle(i); }
+
+  // keep paired number/range mirrored for non-range inputs
+  if (f.endsWith("_n")){
+    const base = f.replace(/_n$/,'');
+    const r = document.querySelector(`input[type="range"][data-f="${base}"][data-i="${i}"]`);
+    if (r){ r.value = t.value; r.dispatchEvent(new Event("rangePairChanged", {bubbles:true})); }
+  }
 });
 
-$("layerList").addEventListener("click", async (e)=>{
+$("layerList").addEventListener("click", (e)=>{
   const btn=e.target.closest("button[data-act]");
   if (!btn) return;
   const i=parseInt(btn.getAttribute("data-i"),10);
   const act = btn.getAttribute("data-act");
-
-  if (act==="apply"){
-    // if it’s a capture layer, do nothing here
-    if (linkLayers[i].kind==="yt"){
-      mountYouTube(i);
-    } else {
-      // capture layer preview already mounted
-    }
-    applyLinkStyle(i);
-  }
+  if (act==="apply"){ mountLinkIframe(i); applyLinkStyle(i); }
   if (act==="pickRandom"){ pickRandomIntoLayer(i); }
   if (act==="play"){ playLayer(i); }
   if (act==="pause"){ pauseLayer(i); }
 
-  if (act==="capA"){
-    await startCaptureToLayer("A", i);
-  }
-  if (act==="capB"){
-    await startCaptureToLayer("B", i);
-  }
+  // capture controls inside layer submenu
+  if (act==="capA"){ startCapture("A"); }
+  if (act==="capB"){ startCapture("B"); }
+  if (act==="stopCap"){ stopCaptureAll(); }
 });
 
 /* =========================
-   WebGL pipeline (shared)
+   Capture (A/B) + FX overlay enable/disable
+========================= */
+let capStreamA=null, capStreamB=null;
+const capVideoA=document.createElement("video");
+const capVideoB=document.createElement("video");
+capVideoA.muted=true; capVideoB.muted=true;
+capVideoA.playsInline=true; capVideoB.playsInline=true;
+
+function setFxOverlayActive(active){
+  $("fxOut").style.display = active ? "block" : "none";
+  $("fxHUD").style.display = active ? "block" : "none";
+
+  if (active){
+    $("fxOut").style.mixBlendMode = $("fxCanvasBlend").value;
+    $("fxOut").style.opacity = String($("fxCanvasOpacity").value);
+  }
+}
+
+async function startCapture(which){
+  try{
+    const stream = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:60 }, audio:false });
+    if (which==="A"){
+      capStreamA=stream; capVideoA.srcObject=stream; await capVideoA.play();
+      // default fix for upside-down
+      $("flipYA").checked = true;
+    }else{
+      capStreamB=stream; capVideoB.srcObject=stream; await capVideoB.play();
+      // default fix for upside-down
+      $("flipYB").checked = true;
+    }
+    $("status").textContent = `Status: captured ${which}`;
+    setFxOverlayActive(true);
+  }catch(e){
+    $("status").textContent = `Status: capture ${which} canceled/blocked`;
+  }
+}
+
+function stopCaptureAll(){
+  for (const s of [capStreamA, capStreamB]){
+    if (!s) continue;
+    for (const tr of s.getTracks()) tr.stop();
+  }
+  capStreamA=null; capStreamB=null;
+  capVideoA.srcObject=null; capVideoB.srcObject=null;
+
+  const stillActive = false;
+  setFxOverlayActive(stillActive);
+  $("status").textContent="Status: capture stopped";
+}
+$("capA").addEventListener("click", ()=>startCapture("A"));
+$("capB").addEventListener("click", ()=>startCapture("B"));
+$("stopCap").addEventListener("click", stopCaptureAll);
+
+$("fxAllOff").addEventListener("click", ()=>{
+  $("tFeedback").checked=false; $("tKaleido").checked=false; $("tRGB").checked=false;
+  $("tGlitch").checked=false; $("tPixel").checked=false; $("tScan").checked=false; $("tVig").checked=false;
+});
+
+/* FX HUD behavior */
+$("fxHUDToggle").addEventListener("click", ()=>{
+  $("fxHUD").classList.toggle("min");
+  // open FX menu if expanding
+  if (!$("fxHUD").classList.contains("min")){
+    controls.classList.add("open");
+    $("btnToggleControls").textContent = "Hide Controls";
+    $("fxMenu").open = true;
+    $("fxMenu").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+});
+
+$("fxCanvasBlend").addEventListener("change", ()=>{
+  $("fxOut").style.mixBlendMode = $("fxCanvasBlend").value;
+});
+function bindSimplePair(rangeId, numId){
+  const r = $(rangeId);
+  const n = $(numId);
+  if (!r || !n) return;
+  syncPair(r,n);
+  r.addEventListener("input", ()=>{
+    $("fxOut").style.opacity = String($("fxCanvasOpacity").value);
+  });
+  n.addEventListener("change", ()=>{
+    $("fxOut").style.opacity = String($("fxCanvasOpacity").value);
+  });
+}
+bindSimplePair("fxCanvasOpacity","fxCanvasOpacity_n");
+
+/* =========================
+   WebGL pipeline
 ========================= */
 const canvas=$("fxOut");
-let gl=null, prog=null;
+let gl=null, prog=null, quadVBO=null;
 let texA=null, texB=null;
 let fbTex0=null, fbTex1=null, fbFbo0=null, fbFbo1=null, ping=0;
 
@@ -1427,7 +1452,7 @@ varying vec2 vUv;
 void main(){ vUv=aPos*0.5+0.5; gl_Position=vec4(aPos,0.0,1.0); }
 `;
 
-const FS=`
+const FS = `
 precision highp float;
 varying vec2 vUv;
 
@@ -1459,14 +1484,6 @@ uniform float uKSeg;
 uniform float uKAmt;
 uniform float uKSpin;
 
-uniform int uMirrorOn;
-uniform int uMirrorMode;
-uniform float uMirrorAmt;
-
-uniform int uWarpOn;
-uniform float uWarpAmt;
-uniform float uWarpSpeed;
-
 uniform int uRGBOn;
 uniform float uRGBAmt;
 
@@ -1484,11 +1501,16 @@ uniform float uVigAmt;
 
 uniform int uFeedbackT;
 uniform int uKaleidoT;
-uniform int uMirrorT;
-uniform int uWarpT;
 uniform int uRGBT;
 uniform int uGlitchT;
 uniform int uPixelT;
+
+/* NEW: flips + mirror */
+uniform int uFlipXA;
+uniform int uFlipYA;
+uniform int uFlipXB;
+uniform int uFlipYB;
+uniform int uMirrorMode;
 
 vec3 satAdjust(vec3 c,float s){
   float l=dot(c,vec3(0.2126,0.7152,0.0722));
@@ -1514,11 +1536,20 @@ float hash(vec2 p){
   return fract(p.x*p.y);
 }
 
+/* NEW: flip helper */
+vec2 applyFlip(vec2 uv, int fx, int fy){
+  if (fx==1) uv.x = 1.0 - uv.x;
+  if (fy==1) uv.y = 1.0 - uv.y;
+  return uv;
+}
+
 vec3 sampleA(vec2 uv){
   if (uHasA!=1) return vec3(0.0);
+  uv = applyFlip(uv, uFlipXA, uFlipYA);
   return texture2D(uA, clamp(uv,0.0,1.0)).rgb;
 }
 vec3 sampleB(vec2 uv){
+  uv = applyFlip(uv, uFlipXB, uFlipYB);
   if (uHasB==1) return texture2D(uB, clamp(uv,0.0,1.0)).rgb;
   if (uUseAasB==1 && uHasA==1) return texture2D(uA, clamp(uv,0.0,1.0)).rgb;
   return vec3(0.0);
@@ -1563,72 +1594,44 @@ vec2 kaleidoUv(vec2 uv){
   return ku + 0.5;
 }
 
-vec2 mirrorUv(vec2 uv){
-  // mode 0: horizontal (left/right), 1: vertical (top/bottom), 2: quad
-  vec2 m = uv;
-  if (uMirrorMode==0){
-    m.x = abs(m.x*2.0 - 1.0);
-  } else if (uMirrorMode==1){
-    m.y = abs(m.y*2.0 - 1.0);
-  } else {
-    m = abs(m*2.0 - 1.0);
-  }
-  return mix(uv, m, clamp(uMirrorAmt,0.0,1.0));
-}
-
-vec2 warpUv(vec2 uv){
-  float a = uWarpAmt;
-  float s = uWarpSpeed;
-  vec2 p = uv - 0.5;
-  float t = uTime * s;
-  p += vec2(
-    sin((p.y*8.0 + t))*a,
-    cos((p.x*8.0 - t))*a
-  );
-  return p + 0.5;
-}
-
 vec3 mixAB(vec3 A, vec3 B){
   vec3 Binv = mix(B, 1.0-B, clamp(uInvB,0.0,1.0));
   vec3 mixedB = blend(A, Binv, uBlendMode);
   return mix(A, mixedB, clamp(uBOpacity,0.0,1.0));
 }
 
+vec2 applyMirror(vec2 uv){
+  if (uMirrorMode==1) uv.x = 1.0-uv.x;
+  else if (uMirrorMode==2) uv.y = 1.0-uv.y;
+  else if (uMirrorMode==3) uv = vec2(1.0-uv.x, 1.0-uv.y);
+  return uv;
+}
+
 void main(){
-  vec2 uv = vUv;
+  vec2 uv = applyMirror(vUv);
 
   vec3 A = sampleA(uv);
   vec3 B = sampleB(uv);
 
-  // per-source effects
   if (uRGBOn==1){
     if (uRGBT==0) A = rgbShiftFromSampler(0, uv);
     else if (uRGBT==1) B = rgbShiftFromSampler(1, uv);
   }
+
   if (uGlitchOn==1){
     vec2 guv = glitchUv(uv);
     if (uGlitchT==0) A = sampleA(guv);
     else if (uGlitchT==1) B = sampleB(guv);
   }
-  if (uWarpOn==1){
-    vec2 wuv = warpUv(uv);
-    if (uWarpT==0) A = sampleA(wuv);
-    else if (uWarpT==1) B = sampleB(wuv);
-  }
+
   if (uKaleidoOn==1){
     vec2 kuv = kaleidoUv(uv);
     if (uKaleidoT==0) A = mix(A, sampleA(kuv), clamp(uKAmt,0.0,1.0));
     else if (uKaleidoT==1) B = mix(B, sampleB(kuv), clamp(uKAmt,0.0,1.0));
   }
-  if (uMirrorOn==1){
-    vec2 muv = mirrorUv(uv);
-    if (uMirrorT==0) A = mix(A, sampleA(muv), clamp(uMirrorAmt,0.0,1.0));
-    else if (uMirrorT==1) B = mix(B, sampleB(muv), clamp(uMirrorAmt,0.0,1.0));
-  }
 
   vec3 Mix = mixAB(A, B);
 
-  // mix-target effects
   if (uPixelOn==1 && uPixelT==2){
     vec2 puv = pixelateUv(uv);
     Mix = mixAB(sampleA(puv), sampleB(puv));
@@ -1637,28 +1640,18 @@ void main(){
     vec2 guv = glitchUv(uv);
     Mix = mixAB(sampleA(guv), sampleB(guv));
   }
-  if (uWarpOn==1 && uWarpT==2){
-    vec2 wuv = warpUv(uv);
-    Mix = mixAB(sampleA(wuv), sampleB(wuv));
-  }
   if (uKaleidoOn==1 && uKaleidoT==2){
     vec2 kuv = kaleidoUv(uv);
     vec3 km = mixAB(sampleA(kuv), sampleB(kuv));
     Mix = mix(Mix, km, clamp(uKAmt,0.0,1.0));
   }
-  if (uMirrorOn==1 && uMirrorT==2){
-    vec2 muv = mirrorUv(uv);
-    vec3 mm = mixAB(sampleA(muv), sampleB(muv));
-    Mix = mix(Mix, mm, clamp(uMirrorAmt,0.0,1.0));
-  }
 
   vec3 Final = Mix;
 
-  // feedback uses previous frame of Final
   if (uFeedbackOn==1){
     vec2 p = uv - 0.5;
     vec2 fbUv = rot2(p, uFbRot) / (1.0 + uFbZoom) + 0.5;
-    vec3 fb = texture2D(uFB, clamp(fbUv,0.0,1.0)).rgb;
+    vec3 fb = texture2D(uFB, fbUv).rgb;
     float a = clamp(uFbAmt,0.0,0.98);
     if (uFeedbackT==0) { A = mix(A, fb, a); Mix = mixAB(A,B); Final = Mix; }
     else if (uFeedbackT==1) { B = mix(B, fb, a); Mix = mixAB(A,B); Final = Mix; }
@@ -1666,17 +1659,12 @@ void main(){
     else { Final = mix(Final, fb, a); }
   }
 
-  // final-target effects
   if (uKaleidoOn==1 && uKaleidoT==3){
     vec2 kuv = kaleidoUv(uv);
     vec3 km = mixAB(sampleA(kuv), sampleB(kuv));
     Final = mix(Final, km, clamp(uKAmt,0.0,1.0));
   }
-  if (uMirrorOn==1 && uMirrorT==3){
-    vec2 muv = mirrorUv(uv);
-    vec3 mm = mixAB(sampleA(muv), sampleB(muv));
-    Final = mix(Final, mm, clamp(uMirrorAmt,0.0,1.0));
-  }
+
   if (uRGBOn==1 && (uRGBT==2 || uRGBT==3)){
     float amt = uRGBAmt;
     vec2 off = vec2(amt, 0.0);
@@ -1685,14 +1673,12 @@ void main(){
     vec3 fB = mixAB(sampleA(uv-off), sampleB(uv-off));
     Final = vec3(fR.r, f0.g, fB.b);
   }
+
   if (uGlitchOn==1 && uGlitchT==3){
     vec2 guv = glitchUv(uv);
     Final = mixAB(sampleA(guv), sampleB(guv));
   }
-  if (uWarpOn==1 && uWarpT==3){
-    vec2 wuv = warpUv(uv);
-    Final = mixAB(sampleA(wuv), sampleB(wuv));
-  }
+
   if (uPixelOn==1 && uPixelT==3){
     vec2 puv = pixelateUv(uv);
     Final = mixAB(sampleA(puv), sampleB(puv));
@@ -1763,12 +1749,12 @@ function initFeedbackTextures(w,h){
 }
 function initGL(){
   gl = canvas.getContext("webgl", {antialias:false, alpha:false});
-  if (!gl){ $("status").textContent="webgl unsupported"; return; }
+  if (!gl){ $("status").textContent="Status: WebGL not supported"; return; }
   prog = createProgram(gl, VS, FS);
-  if (!prog){ $("status").textContent="shader failed"; return; }
+  if (!prog){ $("status").textContent="Status: shader compile failed"; return; }
   gl.useProgram(prog);
 
-  const quadVBO = gl.createBuffer();
+  quadVBO = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, quadVBO);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
 
@@ -1803,7 +1789,8 @@ function updateVideoTexture(tex, video){
 }
 
 function tick(t){
-  if (gl && hasAnyCapture()){
+  const active = !!gl && (capStreamA || capStreamB);
+  if (active){
     resizeCanvas();
 
     const hasA = !!capStreamA && capVideoA.readyState>=2;
@@ -1832,7 +1819,7 @@ function tick(t){
 
     gl.uniform1i(gl.getUniformLocation(prog,"uHasA"), hasA?1:0);
     gl.uniform1i(gl.getUniformLocation(prog,"uHasB"), hasB?1:0);
-    gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), ($("useAasB").value==="1") ? 1 : 0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uUseAasB"), $("useAasB").checked ? 1 : 0);
 
     gl.uniform1i(gl.getUniformLocation(prog,"uBlendMode"), blendModeToInt($("fxBlend").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uBOpacity"), parseFloat($("fxBOpacity").value));
@@ -1851,14 +1838,6 @@ function tick(t){
     gl.uniform1f(gl.getUniformLocation(prog,"uKAmt"), parseFloat($("kAmt").value));
     gl.uniform1f(gl.getUniformLocation(prog,"uKSpin"), parseFloat($("kSpin").value));
 
-    gl.uniform1i(gl.getUniformLocation(prog,"uMirrorOn"), $("tMirror").checked?1:0);
-    gl.uniform1i(gl.getUniformLocation(prog,"uMirrorMode"), parseInt($("mirrorMode").value,10)||0);
-    gl.uniform1f(gl.getUniformLocation(prog,"uMirrorAmt"), parseFloat($("mirrorAmt").value));
-
-    gl.uniform1i(gl.getUniformLocation(prog,"uWarpOn"), $("tWarp").checked?1:0);
-    gl.uniform1f(gl.getUniformLocation(prog,"uWarpAmt"), parseFloat($("warpAmt").value));
-    gl.uniform1f(gl.getUniformLocation(prog,"uWarpSpeed"), parseFloat($("warpSpeed").value));
-
     gl.uniform1i(gl.getUniformLocation(prog,"uRGBOn"), $("tRGB").checked?1:0);
     gl.uniform1f(gl.getUniformLocation(prog,"uRGBAmt"), parseFloat($("rgbAmt").value));
 
@@ -1876,11 +1855,16 @@ function tick(t){
 
     gl.uniform1i(gl.getUniformLocation(prog,"uFeedbackT"), targetToInt($("feedbackTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uKaleidoT"), targetToInt($("kaleidoTarget").value));
-    gl.uniform1i(gl.getUniformLocation(prog,"uMirrorT"), targetToInt($("mirrorTarget").value));
-    gl.uniform1i(gl.getUniformLocation(prog,"uWarpT"), targetToInt($("warpTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uRGBT"), targetToInt($("rgbTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uGlitchT"), targetToInt($("glitchTarget").value));
     gl.uniform1i(gl.getUniformLocation(prog,"uPixelT"), targetToInt($("pixelTarget").value));
+
+    // NEW: flips + mirror
+    gl.uniform1i(gl.getUniformLocation(prog,"uFlipXA"), $("flipXA").checked ? 1 : 0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uFlipYA"), $("flipYA").checked ? 1 : 0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uFlipXB"), $("flipXB").checked ? 1 : 0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uFlipYB"), $("flipYB").checked ? 1 : 0);
+    gl.uniform1i(gl.getUniformLocation(prog,"uMirrorMode"), parseInt($("mirrorMode").value,10) || 0);
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, nextFbo);
     gl.viewport(0,0,w,h);
@@ -1895,23 +1879,14 @@ function tick(t){
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0,0,w,h);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // keep canvas style in sync
+    $("fxOut").style.mixBlendMode = $("fxCanvasBlend").value;
+    $("fxOut").style.opacity = String($("fxCanvasOpacity").value);
   }
 
   requestAnimationFrame(tick);
 }
-
-/* FX all off */
-$("fxAllOff").addEventListener("click", ()=>{
-  $("tFeedback").checked=false;
-  $("tKaleido").checked=false;
-  $("tMirror").checked=false;
-  $("tWarp").checked=false;
-  $("tRGB").checked=false;
-  $("tGlitch").checked=false;
-  $("tPixel").checked=false;
-  $("tScan").checked=false;
-  $("tVig").checked=false;
-});
 
 /* =========================
    Boot
@@ -1921,34 +1896,32 @@ window.addEventListener("resize", resizeOnWindow);
 
 document.addEventListener("DOMContentLoaded", async ()=>{
   initGL();
+  initAllPairs();
+
   initDefaultDecks();
   renderDecks();
 
   rebuildLinkLayers();
   updateQuickButtons();
 
-  // bind all global range<->number pairs
-  bindRangeNumbers();
-
-  // Start minimized-ish: close creative section by default
-  $("fxCreative").open = false;
-
-  // Preload default decks
-  $("deckStatus").textContent = "loading…";
-  for (const k of Object.keys(decks)) await loadDeck(k);
+  // preload default decks
+  $("deckStatus").textContent = "Decks: loading…";
+  for (const k of Object.keys(decks)){
+    await loadDeck(k);
+  }
   renderDecks();
-  $("deckStatus").textContent = "ready";
+  $("deckStatus").textContent = "Decks: loaded";
 
-  // seed random if available
+  // initial random if possible
   if (decks[DEFAULT_DECK_KEY]?.items?.length){
     pickRandomIntoLayer(0);
     pickRandomIntoLayer(1);
-    $("status").textContent = "ready";
+    $("status").textContent = `Status: ready`;
   } else {
-    $("status").textContent = "ready (load deck)";
+    $("status").textContent = "Status: load a deck";
   }
 
-  setCaptureUI();
+  // start render loop
   requestAnimationFrame(tick);
 });
 </script>
