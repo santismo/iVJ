@@ -46,6 +46,31 @@
     .layer iframe{width:100%;height:100%;border:0;display:block;}
     canvas#fxOut{position:absolute; inset:0; width:100%; height:100%; display:none; z-index:30;}
 
+    /* === Always-visible Random buttons (even when controls hidden) === */
+    .stageOverlay{
+      position:absolute; left:10px; top:10px; right:10px;
+      z-index:60;
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+      pointer-events:auto;
+    }
+    .stageOverlay .chip{
+      background:rgba(0,0,0,.38);
+      border:1px solid var(--border);
+      backdrop-filter: blur(6px);
+      border-radius:999px;
+      padding:6px;
+      display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+    }
+    .stageOverlay button{
+      padding:8px 10px;
+      font-size:12px;
+    }
+    .stageOverlay .muted{
+      font-size:12px; color:var(--muted); padding:0 6px;
+      user-select:none;
+    }
+    .stageOverlay.hide{ display:none; }
+
     .fxLoading{
       position:absolute; inset:0; display:none; z-index:40;
       background:radial-gradient(1200px 700px at 30% 20%, rgba(122,162,255,.18), transparent 60%),
@@ -178,6 +203,14 @@
   </div>
 
   <div class="stage" id="stage">
+    <!-- Always-visible Random buttons -->
+    <div class="stageOverlay" id="stageOverlay">
+      <div class="chip" id="overlayChip">
+        <span class="muted">Quick Random:</span>
+        <span class="muted" id="overlayDeckName">Deck: Trippy</span>
+      </div>
+    </div>
+
     <div class="layersRoot" id="layersRoot"></div>
     <canvas id="fxOut"></canvas>
     <div class="fxLoading" id="fxLoading">
@@ -593,6 +626,7 @@ function setMode(mode){
   $("modeFX").style.display = mode==="fx" ? "block" : "none";
   $("status").textContent = "Status: " + (mode==="links" ? "Link Mixer ready" : "FX Capture ready");
   updateFxLoadingOverlay();
+  updateStageOverlayVisibility();
   resizeCanvas();
 }
 $("tabLinks").addEventListener("click", ()=>setMode("links"));
@@ -620,7 +654,6 @@ async function toggleFullscreen(){
 $("btnFullscreen").addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", ()=>{
   $("btnFullscreen").textContent = isFullscreen() ? "Exit Fullscreen" : "Fullscreen Stage";
-  // make sure canvas fits immediately
   resizeCanvas();
 });
 
@@ -671,6 +704,7 @@ const DEFAULT_DECKS = [
 ];
 
 const decks = {}; // key -> {name,url,listId,items:[{videoId,title,thumb}]}
+/* Default deck for Link Mixer auto + initial random */
 let DEFAULT_DECK_KEY = "trippy";
 
 function getInvidiousBase(){
@@ -765,6 +799,7 @@ function refreshDeckDropdowns(){
     sel.innerHTML = Object.keys(decks).map(k=>`<option value="${k}">${decks[k].name}</option>`).join("");
     sel.value = decks[cur] ? cur : DEFAULT_DECK_KEY;
   });
+  updateOverlayDeckLabel();
 }
 
 function updateDeckTargetLayerOptions(){
@@ -778,6 +813,46 @@ function updateDeckTargetLayerOptions(){
   }
 }
 
+/* =========================
+   Always-visible overlay random buttons
+========================= */
+function updateOverlayDeckLabel(){
+  const name = decks[DEFAULT_DECK_KEY]?.name || "Trippy Visuals";
+  $("overlayDeckName").textContent = `Deck: ${name}`;
+}
+function updateStageOverlayVisibility(){
+  // Only show quick buttons in Link Mixer mode
+  $("stageOverlay").classList.toggle("hide", currentMode!=="links");
+}
+function rebuildStageOverlayButtons(){
+  const chip = $("overlayChip");
+  // keep the two label spans, remove old buttons
+  chip.querySelectorAll('button[data-ov]').forEach(b=>b.remove());
+
+  for (let i=0;i<linkLayerCount;i++){
+    const b = document.createElement("button");
+    b.className = "primary";
+    b.setAttribute("data-ov","1");
+    b.textContent = `Random L${i+1}`;
+    b.addEventListener("click", ()=>{
+      // force random from the DEFAULT_DECK_KEY (Trippy by default)
+      if (!decks[DEFAULT_DECK_KEY]?.items?.length){
+        $("status").textContent = `Status: deck "${decks[DEFAULT_DECK_KEY]?.name||DEFAULT_DECK_KEY}" not loaded`;
+        return;
+      }
+      // set that layer's deckKey to default too (nice for consistency)
+      if (linkLayers[i]) linkLayers[i].auto.deckKey = DEFAULT_DECK_KEY;
+      pickRandomIntoLayer(i);
+    });
+    chip.appendChild(b);
+  }
+
+  updateOverlayDeckLabel();
+}
+
+/* =========================
+   Deck render
+========================= */
 function renderDecks(){
   const wrap = $("deckList");
   wrap.innerHTML = "";
@@ -853,6 +928,7 @@ $("deckList").addEventListener("click", async (e)=>{
     DEFAULT_DECK_KEY = k;
     $("deckStatus").textContent = `Decks: default auto-random = "${decks[k].name}"`;
     refreshDeckDropdowns();
+    rebuildStageOverlayButtons();
   }
 });
 
@@ -938,7 +1014,6 @@ function applyLinkStyle(i){
   L.el.style.opacity = L.ui.op;
   L.el.style.mixBlendMode = L.ui.blend;
 
-  // Crop/Zoom via CSS transform
   const z = Math.max(1, L.ui.zoom || 1);
   const cx = (L.ui.cx ?? 0.5);
   const cy = (L.ui.cy ?? 0.5);
@@ -1106,6 +1181,7 @@ function rebuildLinkUI(){
 
   updateDeckTargetLayerOptions();
   refreshDeckDropdowns();
+  rebuildStageOverlayButtons();
 }
 
 function rebuildLinkLayers(){
@@ -1741,6 +1817,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   rebuildLinkLayers();
   setMode("links");
   hookRangeReadouts();
+  rebuildStageOverlayButtons();
 
   // Preload default decks so random works immediately
   $("deckStatus").textContent = "Decks: loading defaults…";
@@ -1749,6 +1826,17 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   }
   renderDecks();
   $("deckStatus").textContent = "Decks: loaded defaults";
+
+  // ✅ NEW: On default Link Mixer (2 layers), auto-load RANDOM from Trippy deck
+  if (decks[DEFAULT_DECK_KEY]?.items?.length) {
+    for (let i=0;i<linkLayerCount;i++){
+      linkLayers[i].auto.deckKey = DEFAULT_DECK_KEY;
+      pickRandomIntoLayer(i);
+    }
+    $("status").textContent = `Status: loaded random "${decks[DEFAULT_DECK_KEY].name}" → ${linkLayerCount} layers`;
+  } else {
+    $("status").textContent = "Status: defaults loaded (trippy deck empty — using fallback links)";
+  }
 
   requestAnimationFrame(tick);
 });
