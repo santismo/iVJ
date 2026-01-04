@@ -743,21 +743,9 @@ function mountLinkIframe(i){
   if ($("playbackMode").value === "direct"){
     const src = buildDirectSrc(vid);
     const loopOn = $("loopVideos").value === "on";
-    L.el.innerHTML = `<video data-layer="${i}" playsinline muted autoplay ${loopOn ? "loop" : ""} crossorigin="anonymous" preload="auto"></video>`;
+    L.el.innerHTML = `<video data-layer="${i}" playsinline muted autoplay ${loopOn ? "loop" : ""} crossorigin="anonymous"></video>`;
     L.video = L.el.querySelector("video");
-    L.video.autoplay = true;
-    L.video.muted = true;
-    L.video.loop = loopOn;
-    L.video.playsInline = true;
-    L.video.crossOrigin = "anonymous";
-    L.video.addEventListener("error", ()=>{
-      $("status").textContent = "Status: direct video failed (falling back to embed)";
-      $("playbackMode").value = "embed";
-      mountLinkIframe(i);
-      applyLinkStyle(i);
-    }, { once:true });
     L.video.src = src;
-    L.video.load();
     L.video.play().catch(()=>{});
     L.iframe = null;
   }else{
