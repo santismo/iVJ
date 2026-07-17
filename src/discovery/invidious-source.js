@@ -120,40 +120,8 @@ export class InvidiousSource {
         lastError = error;
       }
     }
-    this.lastError = lastError || new Error("No search provider responded.");
+    this.lastError = lastError || new Error("No playlist provider responded.");
     throw this.lastError;
-  }
-
-  async test() {
-    const { base } = await this.request("/api/v1/search?q=visual%20loop&type=video&page=1", { timeoutMs: 6500, maxBases: 6 });
-    return base;
-  }
-
-  async searchQuery(query, page = 1) {
-    const path = `/api/v1/search?q=${encodeURIComponent(query)}&type=video&sort_by=relevance&page=${page}`;
-    const { payload } = await this.request(path, { timeoutMs: 4200, maxBases: 4 });
-    return (Array.isArray(payload) ? payload : []).map(normalizeVideo).filter(Boolean);
-  }
-
-  async searchMany(queries, onProgress = () => {}) {
-    const all = [];
-    const seen = new Set();
-    let completed = 0;
-    for (const query of queries.slice(0, 6)) {
-      try {
-        const items = await this.searchQuery(query);
-        for (const item of items) {
-          if (!seen.has(item.videoId)) {
-            seen.add(item.videoId);
-            all.push(item);
-          }
-        }
-      } finally {
-        completed += 1;
-        onProgress({ completed, total: Math.min(queries.length, 6), query, count: all.length });
-      }
-    }
-    return all;
   }
 
   async playlist(value, maxPages = 10) {

@@ -1,73 +1,39 @@
 # iVJ 2
 
-iVJ is a browser-based visual performance mixer designed separately for touch-first iPhone use and desktop VJ sessions.
+iVJ is a touch-first iPhone and desktop visual performance mixer that runs as a static website.
 
 **Live app:** https://santismo.github.io/iVJ/
 
-## What changed in version 2
+## Version 2.1
 
-- Responsive mobile and desktop workspaces
-- Two live decks with independent queues and an equal-power crossfader
-- Smooth, cut, and dip-to-black transitions
-- Auto VJ with hidden-deck preloading, random order, and repeat protection
-- **Describe My Set:** free keyless prompt planning that creates multiple visual searches and builds complementary Deck A/B queues
-- Invidious search and playlist loading with provider fallbacks
-- YouTube video/playlist URLs and local video files
-- Scene presets, adjustable color treatment, scanlines, vignette, noise, and Auto FX
-- Microphone or audio-file reactivity with pulse, color movement, and beat preparation
-- Saved sessions plus JSON import/export
-- Installable PWA shell, screen wake lock, performance mode, fullscreen, and desktop shortcuts
+- Clean video display with no labels or app controls over the output
+- Two muted YouTube/local-video decks with independent queues
+- 13 built-in visual clips and four ready-to-mix curated banks
+- Optional larger online playlists and custom YouTube video/playlist URLs
+- Separate sequential **Next** and no-repeat **Random** controls on each deck
+- Random Both, New Random, and Global Roll performance actions
+- YouTube IFrame API playback with muted autoplay, manual Play Both, stall recovery, embed-error skipping, and resume-on-return
+- Equal-power crossfader, cuts, transitions, blend modes, and Auto VJ
+- Advanced output processing: mirror X/Y, RGB shift, trails/echo, edge detection, neon outline, turbulence warp, scanlines, grain, vignette, zoom, rotation, and geometry overlays
+- 13 effect scenes including Mirror Tunnel, Kaleido Acid, RGB Ghost, Dream Trails, Neon Edges, Warp Drive, VHS Smear, and Chrome Split
+- Saved sessions, JSON import/export, PWA shell, wake lock, fullscreen, and clean performance mode
 
-The original single-file mixer is preserved at [`legacy.html`](./legacy.html).
+The visual finder and audio-reactive panel were removed in 2.1 so the interface stays focused on decks, playlists, mixing, and live effects. The original single-file mixer remains available at [`legacy.html`](./legacy.html).
 
-## Describe My Set
+## Playback behavior
 
-Try a direction such as:
-
-> Grainy 1980s commercials, empty malls, neon night driving, purple and green, dreamy at first then increasingly chaotic, no talking heads.
-
-iVJ extracts subjects, era, texture, mood, motion, colors, pacing, and exclusions. It creates several video searches, ranks the candidates, and lets you approve the clips before splitting them across both decks.
-
-The default planner is intentionally keyless and runs inside the browser. An optional AI planner proxy URL can be configured in **Setup**. That proxy may use Gemini or another model, but API credentials must stay on the server and must never be committed to this public repository or embedded in the page.
-
-Expected proxy request:
-
-```json
-{
-  "task": "plan-vj-video-searches",
-  "prompt": "user description",
-  "responseShape": {
-    "queries": ["string"],
-    "exclusions": ["string"],
-    "suggestedScene": "Clean | Dream | VHS | Neon | Acid | Noir | Mono",
-    "suggestedInterval": "number",
-    "summary": "string"
-  }
-}
-```
-
-Expected response:
-
-```json
-{
-  "queries": ["1980s strange commercials VHS archive footage"],
-  "exclusions": ["talking heads"],
-  "suggestedScene": "VHS",
-  "suggestedInterval": 14,
-  "summary": "VHS treatment · fast pacing"
-}
-```
+YouTube embeds are muted so mobile browsers can autoplay them. If iOS pauses an embed, tap **Play both** or tap the clean display. The player retries a stalled deck and automatically advances when an embed is unavailable. Every built-in deck has multiple clips, so **Next** always advances instead of reloading a one-item queue.
 
 ## Controls
 
-- `1` / `2`: advance Deck A / B
+- `1` / `2`: next clip on Deck A / B
+- `Q` / `W`: random clip on Deck A / B
 - `←` / `→`: move the crossfader
 - `Space`: toggle Auto VJ
-- `R`: roll a scene
+- `R`: roll an FX scene
+- `G`: global random roll
 - `B`: blackout
 - `F`: fullscreen
-
-YouTube embeds are muted so browsers can autoplay them. Use the Audio panel to analyze a song or microphone input separately.
 
 ## Structure
 
@@ -75,13 +41,16 @@ YouTube embeds are muted so browsers can autoplay them. Use the Audio panel to a
 index.html
 styles/app.css
 src/main.js
-src/core/
-src/discovery/
-src/ui/
+src/data/playlists.js
+src/core/store.js
+src/core/mixer.js
+src/core/effects.js
+src/discovery/invidious-source.js
+src/ui/render.js
 assets/
 manifest.webmanifest
 sw.js
 legacy.html
 ```
 
-No build process or package installation is required. Serve the repository with any static server or GitHub Pages.
+No build process is required. Serve the repository with any static server or GitHub Pages. Run `npm run check` for syntax, UI ID, playlist, URL parser, and FX coverage checks.

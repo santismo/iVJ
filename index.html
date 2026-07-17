@@ -19,157 +19,91 @@
     <header class="topbar">
       <div class="brand" aria-label="iVJ 2">
         <span class="brand-mark">iVJ</span>
-        <span class="version">2.0</span>
+        <span class="version">2.1</span>
       </div>
       <div class="status-strip">
         <span class="status-dot" id="sourceDot"></span>
-        <span id="sourceStatus">Sources ready</span>
+        <span id="sourceStatus">Visual library ready</span>
         <span class="divider"></span>
         <span id="fpsStatus">AUTO quality</span>
       </div>
       <div class="top-actions">
         <button class="icon-button" id="wakeButton" type="button" title="Keep screen awake" aria-label="Keep screen awake">☀</button>
-        <button class="button compact" id="performanceButton" type="button">Performance</button>
+        <button class="button compact" id="performanceButton" type="button">Clean display</button>
         <button class="button compact primary" id="fullscreenButton" type="button">Fullscreen</button>
       </div>
     </header>
 
     <main class="workstation">
-      <section class="visual-workspace" aria-label="VJ output">
+      <section class="visual-workspace" aria-label="VJ output and transport">
         <div class="stage-shell">
-          <div class="stage" id="stage">
-            <div class="deck-slot deck-a" id="deckAOutput" aria-label="Deck A output"></div>
-            <div class="deck-slot deck-b" id="deckBOutput" aria-label="Deck B output"></div>
-            <div class="screen-fx" id="screenFx" aria-hidden="true"></div>
+          <div class="stage" id="stage" title="Tap to start both decks. In clean display mode, tap to exit.">
+            <div class="visual-layer" id="visualLayer">
+              <div class="deck-slot deck-a" id="deckAOutput" aria-label="Deck A output"></div>
+              <div class="deck-slot deck-b" id="deckBOutput" aria-label="Deck B output"></div>
+              <div class="geometry-fx" id="geometryFx" aria-hidden="true"></div>
+              <div class="screen-fx" id="screenFx" aria-hidden="true"></div>
+            </div>
             <div class="blackout" id="blackout" aria-hidden="true"></div>
-
-            <div class="stage-info stage-info-a">
-              <span class="deck-letter">A</span>
-              <span class="stage-title" id="stageTitleA">No clip loaded</span>
-            </div>
-            <div class="stage-info stage-info-b">
-              <span class="deck-letter">B</span>
-              <span class="stage-title" id="stageTitleB">No clip loaded</span>
-            </div>
-            <div class="stage-center-status" id="stageCenterStatus">READY</div>
-            <button class="stage-exit button" id="exitPerformanceButton" type="button">Exit</button>
           </div>
         </div>
 
         <div class="transport" aria-label="Performance controls">
           <div class="transport-deck deck-a-controls">
-            <button class="pad deck-color-a" id="nextAButton" type="button"><span>Next</span><strong>A</strong></button>
-            <button class="pad" id="cutAButton" type="button"><span>Cut</span><strong>A</strong></button>
+            <button class="pad cut-pad" id="cutAButton" type="button"><span>Cut</span><strong>A</strong></button>
+            <button class="pad random-pad deck-color-a" id="randomAButton" type="button"><span>Random</span><strong>A</strong></button>
+            <button class="pad" id="nextAButton" type="button"><span>Next</span><strong>A</strong></button>
           </div>
 
           <div class="crossfader-block">
             <div class="crossfader-labels"><span>A</span><span id="crossfadeReadout">50 / 50</span><span>B</span></div>
             <input class="crossfader" id="crossfader" type="range" min="0" max="1" value="0.5" step="0.001" aria-label="Crossfader">
+            <div class="transport-status" id="transportStatus">Both decks loading</div>
             <div class="performance-buttons">
-              <button class="button" id="autoVjButton" type="button">Auto VJ</button>
+              <button class="button" id="playBothButton" type="button">▶ Play both</button>
+              <button class="button" id="randomBothButton" type="button">Random both</button>
+              <button class="button" id="fullRandomButton" type="button">New random</button>
               <button class="button" id="randomSceneButton" type="button">Roll FX</button>
+              <button class="button primary" id="globalRollButton" type="button">Global roll</button>
+              <button class="button" id="autoVjButton" type="button">Auto VJ</button>
               <button class="button danger" id="blackoutButton" type="button">Blackout</button>
             </div>
           </div>
 
           <div class="transport-deck deck-b-controls">
-            <button class="pad" id="cutBButton" type="button"><span>Cut</span><strong>B</strong></button>
-            <button class="pad deck-color-b" id="nextBButton" type="button"><span>Next</span><strong>B</strong></button>
+            <button class="pad" id="nextBButton" type="button"><span>Next</span><strong>B</strong></button>
+            <button class="pad random-pad deck-color-b" id="randomBButton" type="button"><span>Random</span><strong>B</strong></button>
+            <button class="pad cut-pad" id="cutBButton" type="button"><span>Cut</span><strong>B</strong></button>
           </div>
         </div>
       </section>
 
       <aside class="control-workspace" id="controlWorkspace">
         <nav class="panel-tabs" aria-label="Controls">
-          <button class="tab active" data-tab="discover" type="button"><span>⌕</span>Discover</button>
+          <button class="tab active" data-tab="playlists" type="button"><span>▦</span>Playlists</button>
           <button class="tab" data-tab="decks" type="button"><span>▣</span>Decks</button>
           <button class="tab" data-tab="mix" type="button"><span>⇄</span>Mix</button>
           <button class="tab" data-tab="fx" type="button"><span>✦</span>FX</button>
-          <button class="tab" data-tab="audio" type="button"><span>◒</span>Audio</button>
           <button class="tab" data-tab="settings" type="button"><span>⚙</span>Setup</button>
         </nav>
 
         <div class="panels">
-          <section class="panel active" data-panel="discover">
+          <section class="panel active" data-panel="playlists">
             <div class="panel-heading">
-              <div>
-                <p class="eyebrow">DESCRIBE MY SET</p>
-                <h1>What should tonight look like?</h1>
-              </div>
-              <span class="beta-pill">KEYLESS</span>
+              <div><p class="eyebrow">READY-TO-MIX VISUALS</p><h1>Pick a playlist and perform</h1></div>
+              <span class="beta-pill">NO SEARCH</span>
             </div>
-            <p class="help">Describe subjects, era, mood, colors, motion, pacing, or things to avoid. iVJ turns it into several searches and builds two complementary decks.</p>
-            <label class="field">
-              <span>Visual direction</span>
-              <textarea id="setPrompt" rows="5" placeholder="Grainy 1980s commercials, empty malls, neon night driving, purple and green, dreamy at first then increasingly chaotic, no talking heads"></textarea>
-            </label>
-            <div class="prompt-presets" id="promptPresets">
-              <button type="button" data-prompt="dreamy retro technology, soft VHS haze, floating geometry, blue and violet, slow hypnotic motion, no talking heads">Dream machine</button>
-              <button type="button" data-prompt="strange vintage commercials, public access television, awkward mascots, analog glitches, saturated colors, fast chaotic pacing">Commercial nightmare</button>
-              <button type="button" data-prompt="empty architecture, brutalist corridors, fluorescent offices, security camera footage, monochrome, slow ominous movement, no people">Liminal surveillance</button>
+            <p class="help">The built-in sets load instantly and contain enough clips for Next and Random to stay useful. Online playlists are optional and use your configured playlist provider.</p>
+            <div class="quick-random-grid">
+              <button class="quick-card" id="randomBothPanelButton" type="button"><span>Shuffle what is loaded</span><strong>Random both decks</strong></button>
+              <button class="quick-card" id="fullRandomPanelButton" type="button"><span>Pull from every built-in set</span><strong>New random pair</strong></button>
+              <button class="quick-card primary" id="globalRollPanelButton" type="button"><span>Videos + FX + blend + mix</span><strong>Global roll</strong></button>
+              <button class="quick-card" id="resetDefaultDecksButton" type="button"><span>Restore the reliable starter bank</span><strong>Reset default decks</strong></button>
             </div>
-            <div class="action-row">
-              <button class="button primary grow" id="buildSetButton" type="button">Find Visuals</button>
-              <button class="button" id="planOnlyButton" type="button">Preview Plan</button>
-            </div>
+            <div class="playlist-grid" id="playlistGrid"></div>
 
-            <div class="discovery-progress hidden" id="discoveryProgress">
-              <span class="spinner"></span><span id="discoveryProgressText">Planning searches…</span>
-            </div>
-            <div class="search-plan hidden" id="searchPlan">
-              <div class="subheading"><span>Search plan</span><button class="text-button" id="editPlanButton" type="button">Edit</button></div>
-              <div class="chip-list" id="queryChips"></div>
-              <div class="plan-summary" id="planSummary"></div>
-            </div>
-
-            <div class="results-block hidden" id="resultsBlock">
-              <div class="subheading">
-                <span id="resultsTitle">Results</span>
-                <div class="inline-actions">
-                  <button class="text-button" id="selectAllResults" type="button">All</button>
-                  <button class="text-button" id="clearResults" type="button">None</button>
-                </div>
-              </div>
-              <div class="results-grid" id="resultsGrid"></div>
-              <div class="sticky-actions">
-                <button class="button primary grow" id="buildDecksButton" type="button">Build A + B</button>
-                <button class="button" id="shuffleResultsButton" type="button">Shuffle</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel" data-panel="decks">
-            <div class="panel-heading">
-              <div><p class="eyebrow">CLIP BANKS</p><h2>Deck queues</h2></div>
-              <button class="button compact" id="clearQueuesButton" type="button">Clear</button>
-            </div>
-
-            <div class="deck-editor deck-a-editor">
-              <div class="deck-editor-head">
-                <div><span class="deck-badge deck-color-a">A</span><strong id="deckACount">0 clips</strong></div>
-                <div class="inline-actions">
-                  <button class="text-button" data-shuffle-deck="A" type="button">Shuffle</button>
-                  <button class="text-button" data-next-deck="A" type="button">Next</button>
-                </div>
-              </div>
-              <div class="now-card" id="deckANow">No clip loaded</div>
-              <div class="queue-list" id="deckAQueue"></div>
-            </div>
-
-            <div class="deck-editor deck-b-editor">
-              <div class="deck-editor-head">
-                <div><span class="deck-badge deck-color-b">B</span><strong id="deckBCount">0 clips</strong></div>
-                <div class="inline-actions">
-                  <button class="text-button" data-shuffle-deck="B" type="button">Shuffle</button>
-                  <button class="text-button" data-next-deck="B" type="button">Next</button>
-                </div>
-              </div>
-              <div class="now-card" id="deckBNow">No clip loaded</div>
-              <div class="queue-list" id="deckBQueue"></div>
-            </div>
-
-            <details class="drawer" open>
-              <summary>Add media</summary>
+            <details class="drawer">
+              <summary>Add your own media</summary>
               <div class="drawer-body">
                 <label class="field"><span>YouTube video or playlist URL</span><input id="mediaUrl" type="url" inputmode="url" placeholder="https://youtube.com/watch?v=… or playlist…"></label>
                 <div class="segmented" id="urlDeckTarget" aria-label="Target deck">
@@ -177,7 +111,7 @@
                   <button data-value="B" type="button">Deck B</button>
                   <button data-value="both" type="button">Split</button>
                 </div>
-                <button class="button primary" id="addUrlButton" type="button">Add URL</button>
+                <button class="button primary" id="addUrlButton" type="button">Add media</button>
                 <label class="file-drop" for="localFiles">
                   <strong>Add local videos</strong>
                   <span>MP4, MOV, WebM — files remain on this device</span>
@@ -187,57 +121,93 @@
             </details>
           </section>
 
+          <section class="panel" data-panel="decks">
+            <div class="panel-heading">
+              <div><p class="eyebrow">FRIENDLIER CLIP BANKS</p><h2>Deck queues</h2></div>
+              <button class="button compact danger" id="clearQueuesButton" type="button">Clear both</button>
+            </div>
+
+            <div class="deck-editor deck-a-editor">
+              <div class="deck-editor-head">
+                <div><span class="deck-badge deck-color-a">A</span><strong id="deckACount">0 clips</strong></div>
+                <div class="deck-action-row">
+                  <button data-deck-action="restart" data-deck="A" type="button">Restart</button>
+                  <button data-deck-action="random" data-deck="A" type="button">Random</button>
+                  <button data-deck-action="next" data-deck="A" type="button">Next</button>
+                  <button data-deck-action="shuffle" data-deck="A" type="button">Shuffle</button>
+                </div>
+              </div>
+              <div class="now-card" id="deckANow">No clip loaded</div>
+              <div class="queue-list" id="deckAQueue"></div>
+            </div>
+
+            <div class="deck-editor deck-b-editor">
+              <div class="deck-editor-head">
+                <div><span class="deck-badge deck-color-b">B</span><strong id="deckBCount">0 clips</strong></div>
+                <div class="deck-action-row">
+                  <button data-deck-action="restart" data-deck="B" type="button">Restart</button>
+                  <button data-deck-action="random" data-deck="B" type="button">Random</button>
+                  <button data-deck-action="next" data-deck="B" type="button">Next</button>
+                  <button data-deck-action="shuffle" data-deck="B" type="button">Shuffle</button>
+                </div>
+              </div>
+              <div class="now-card" id="deckBNow">No clip loaded</div>
+              <div class="queue-list" id="deckBQueue"></div>
+            </div>
+          </section>
+
           <section class="panel" data-panel="mix">
             <div class="panel-heading"><div><p class="eyebrow">TRANSITIONS</p><h2>Mix behavior</h2></div></div>
-            <label class="field range-field"><span>Crossfade <output id="mixCrossfadeValue">50%</output></span><input id="mixCrossfader" type="range" min="0" max="1" step="0.001" value="0.5"></label>
+            <label class="field range-field"><span>Crossfade <output id="mixCrossfadeValue">50% B</output></span><input id="mixCrossfader" type="range" min="0" max="1" step="0.001" value="0.5"></label>
             <div class="two-column">
-              <label class="field"><span>Blend mode</span><select id="blendMode"><option value="normal">Normal</option><option value="screen" selected>Screen</option><option value="multiply">Multiply</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option><option value="lighten">Lighten</option><option value="hard-light">Hard light</option></select></label>
+              <label class="field"><span>Blend mode</span><select id="blendMode"><option value="normal">Normal</option><option value="screen" selected>Screen</option><option value="multiply">Multiply</option><option value="overlay">Overlay</option><option value="difference">Difference</option><option value="exclusion">Exclusion</option><option value="lighten">Lighten</option><option value="hard-light">Hard light</option><option value="color-dodge">Color dodge</option></select></label>
               <label class="field"><span>Transition</span><select id="transitionStyle"><option value="smooth">Smooth</option><option value="cut">Cut</option><option value="dip">Dip to black</option></select></label>
             </div>
             <label class="field range-field"><span>Transition time <output id="transitionTimeValue">1.2s</output></span><input id="transitionTime" type="range" min="0" max="8" step="0.1" value="1.2"></label>
             <label class="field range-field"><span>Auto change interval <output id="autoIntervalValue">24s</output></span><input id="autoInterval" type="range" min="5" max="180" step="1" value="24"></label>
             <div class="toggle-row"><div><strong>Auto VJ</strong><span>Preload the hidden deck, then transition</span></div><label class="switch"><input id="autoVjToggle" type="checkbox"><span></span></label></div>
-            <div class="toggle-row"><div><strong>Avoid repeats</strong><span>Remember recently used clips</span></div><label class="switch"><input id="avoidRepeats" type="checkbox" checked><span></span></label></div>
-            <div class="toggle-row"><div><strong>Random order</strong><span>Pick from anywhere in each queue</span></div><label class="switch"><input id="randomOrder" type="checkbox" checked><span></span></label></div>
+            <div class="toggle-row"><div><strong>Avoid repeats</strong><span>Remember recently used clips for Random</span></div><label class="switch"><input id="avoidRepeats" type="checkbox" checked><span></span></label></div>
+            <div class="toggle-row"><div><strong>Random Auto VJ</strong><span>Auto mode picks across each queue; Next stays sequential</span></div><label class="switch"><input id="randomOrder" type="checkbox" checked><span></span></label></div>
           </section>
 
           <section class="panel" data-panel="fx">
-            <div class="panel-heading"><div><p class="eyebrow">LOOKS</p><h2>Scenes and effects</h2></div><button class="button compact" id="resetFxButton" type="button">Reset</button></div>
+            <div class="panel-heading"><div><p class="eyebrow">LIVE IMAGE PROCESSING</p><h2>Scenes and effects</h2></div><button class="button compact" id="resetFxButton" type="button">Clean</button></div>
             <div class="scene-grid" id="sceneGrid"></div>
+            <div class="subheading">Manual effect</div>
+            <div class="fx-mode-grid" id="filterModeGrid">
+              <button data-filter-mode="none" type="button">Off</button>
+              <button data-filter-mode="rgb" type="button">RGB shift</button>
+              <button data-filter-mode="trails" type="button">Trails</button>
+              <button data-filter-mode="edges" type="button">Edges</button>
+              <button data-filter-mode="neon" type="button">Neon edge</button>
+              <button data-filter-mode="warp" type="button">Warp</button>
+              <button data-filter-mode="rgbtrails" type="button">RGB echo</button>
+            </div>
             <div class="fx-controls">
-              <label class="field range-field"><span>Intensity <output id="fxIntensityValue">65%</output></span><input id="fxIntensity" type="range" min="0" max="1" step="0.01" value="0.65"></label>
-              <label class="field range-field"><span>Hue <output id="fxHueValue">0°</output></span><input id="fxHue" type="range" min="-180" max="180" step="1" value="0"></label>
-              <label class="field range-field"><span>Saturation <output id="fxSaturationValue">120%</output></span><input id="fxSaturation" type="range" min="0" max="3" step="0.01" value="1.2"></label>
-              <label class="field range-field"><span>Contrast <output id="fxContrastValue">110%</output></span><input id="fxContrast" type="range" min="0.5" max="2.5" step="0.01" value="1.1"></label>
-              <label class="field range-field"><span>Zoom <output id="fxZoomValue">1.00×</output></span><input id="fxZoom" type="range" min="1" max="1.4" step="0.001" value="1"></label>
+              <label class="field range-field"><span>Effect strength <output id="fxIntensityValue">70%</output></span><input id="fxIntensity" type="range" min="0" max="1" step="0.01" value="0.7"></label>
+              <label class="field range-field"><span>Hue <output id="fxHueValue">14°</output></span><input id="fxHue" type="range" min="-180" max="180" step="1" value="14"></label>
+              <label class="field range-field"><span>Saturation <output id="fxSaturationValue">145%</output></span><input id="fxSaturation" type="range" min="0" max="3" step="0.01" value="1.45"></label>
+              <label class="field range-field"><span>Contrast <output id="fxContrastValue">108%</output></span><input id="fxContrast" type="range" min="0.5" max="2.5" step="0.01" value="1.08"></label>
+              <label class="field range-field"><span>Zoom <output id="fxZoomValue">1.02×</output></span><input id="fxZoom" type="range" min="1" max="1.45" step="0.001" value="1.025"></label>
+              <label class="field range-field"><span>Rotation <output id="fxRotationValue">0°</output></span><input id="fxRotation" type="range" min="-45" max="45" step="0.5" value="0"></label>
+              <label class="field"><span>Geometry overlay</span><select id="geometryMode"><option value="none">None</option><option value="kaleido">Kaleido prism</option><option value="tunnel">Mirror tunnel</option><option value="prism">Prism grid</option></select></label>
             </div>
-            <div class="toggle-row"><div><strong>Scanlines</strong><span>Animated CRT texture</span></div><label class="switch"><input id="scanlinesToggle" type="checkbox"><span></span></label></div>
-            <div class="toggle-row"><div><strong>Vignette</strong><span>Darken output edges</span></div><label class="switch"><input id="vignetteToggle" type="checkbox" checked><span></span></label></div>
-            <div class="toggle-row"><div><strong>Auto-roll FX</strong><span>Change scene with Auto VJ</span></div><label class="switch"><input id="autoFxToggle" type="checkbox"><span></span></label></div>
-          </section>
-
-          <section class="panel" data-panel="audio">
-            <div class="panel-heading"><div><p class="eyebrow">AUDIO REACTIVITY</p><h2>Make the mix listen</h2></div><span class="level-meter"><i id="audioLevel"></i></span></div>
-            <div class="audio-source-buttons">
-              <button class="button primary" id="micButton" type="button">Use microphone</button>
-              <label class="button" for="audioFile">Load song<input id="audioFile" type="file" accept="audio/*"></label>
-              <button class="button" id="stopAudioButton" type="button">Stop</button>
+            <div class="toggle-grid">
+              <div class="toggle-row"><div><strong>Mirror</strong><span>Flip output horizontally</span></div><label class="switch"><input id="mirrorXToggle" type="checkbox"><span></span></label></div>
+              <div class="toggle-row"><div><strong>Upside down</strong><span>Flip output vertically</span></div><label class="switch"><input id="mirrorYToggle" type="checkbox"><span></span></label></div>
+              <div class="toggle-row"><div><strong>Scanlines</strong><span>Animated CRT texture</span></div><label class="switch"><input id="scanlinesToggle" type="checkbox"><span></span></label></div>
+              <div class="toggle-row"><div><strong>Vignette</strong><span>Darken output edges</span></div><label class="switch"><input id="vignetteToggle" type="checkbox" checked><span></span></label></div>
+              <div class="toggle-row"><div><strong>Noise</strong><span>Analog grain texture</span></div><label class="switch"><input id="noiseToggle" type="checkbox" checked><span></span></label></div>
+              <div class="toggle-row"><div><strong>Auto-roll FX</strong><span>Change preset with Auto VJ</span></div><label class="switch"><input id="autoFxToggle" type="checkbox"><span></span></label></div>
             </div>
-            <audio id="audioPlayer" controls playsinline></audio>
-            <label class="field range-field"><span>Sensitivity <output id="audioSensitivityValue">1.4×</output></span><input id="audioSensitivity" type="range" min="0.2" max="4" step="0.05" value="1.4"></label>
-            <div class="toggle-row"><div><strong>Pulse zoom</strong><span>Scale visuals with low frequencies</span></div><label class="switch"><input id="audioPulseToggle" type="checkbox" checked><span></span></label></div>
-            <div class="toggle-row"><div><strong>Color motion</strong><span>Move hue and saturation with energy</span></div><label class="switch"><input id="audioColorToggle" type="checkbox"><span></span></label></div>
-            <div class="toggle-row"><div><strong>Beat cuts</strong><span>Advance the hidden deck on strong beats</span></div><label class="switch"><input id="beatCutsToggle" type="checkbox"><span></span></label></div>
-            <p class="help">On iPhone, start microphone or song playback with a tap. Browser audio permissions prevent automatic activation.</p>
           </section>
 
           <section class="panel" data-panel="settings">
             <div class="panel-heading"><div><p class="eyebrow">SOURCES + STORAGE</p><h2>Setup</h2></div></div>
             <label class="field"><span>Preferred Invidious instance</span><input id="invidiousBase" type="url" inputmode="url" placeholder="Automatic fallback"></label>
-            <button class="button" id="testSourceButton" type="button">Test video search</button>
-            <label class="field"><span>Performance quality</span><select id="qualityMode"><option value="auto">Automatic</option><option value="high">High / 60fps</option><option value="balanced">Balanced</option><option value="mobile">Mobile saver</option></select></label>
-            <label class="field"><span>Optional AI planner proxy</span><input id="aiProxyUrl" type="url" inputmode="url" placeholder="Leave empty for keyless planning"></label>
-            <p class="help">A Gemini key must never be stored in a public GitHub Page. This optional URL is for a secure serverless proxy that returns search queries.</p>
+            <button class="button" id="testSourceButton" type="button">Test online playlist source</button>
+            <p class="help">Built-in playlists do not need this setting. It is only used when you paste or load a larger online YouTube playlist.</p>
+            <label class="field"><span>Performance quality</span><select id="qualityMode"><option value="auto">Automatic</option><option value="high">High / desktop</option><option value="balanced">Balanced</option><option value="mobile">Mobile saver</option></select></label>
             <div class="action-row wrap-actions">
               <button class="button" id="exportSessionButton" type="button">Export session</button>
               <label class="button" for="importSessionFile">Import session<input id="importSessionFile" type="file" accept="application/json"></label>
@@ -246,7 +216,7 @@
             <a class="legacy-link" href="./legacy.html">Open original iVJ mixer ↗</a>
             <div class="shortcut-card">
               <strong>Desktop shortcuts</strong>
-              <p><kbd>1</kbd>/<kbd>2</kbd> next deck · <kbd>←</kbd>/<kbd>→</kbd> mix · <kbd>Space</kbd> Auto VJ · <kbd>R</kbd> roll FX · <kbd>B</kbd> blackout · <kbd>F</kbd> fullscreen</p>
+              <p><kbd>1</kbd>/<kbd>2</kbd> next · <kbd>Q</kbd>/<kbd>W</kbd> random · <kbd>←</kbd>/<kbd>→</kbd> mix · <kbd>Space</kbd> Auto VJ · <kbd>R</kbd> FX · <kbd>G</kbd> global roll · <kbd>B</kbd> blackout · <kbd>F</kbd> fullscreen</p>
             </div>
           </section>
         </div>
@@ -254,14 +224,65 @@
     </main>
 
     <nav class="mobile-nav" aria-label="Mobile controls">
-      <button class="active" data-tab="discover" type="button"><span>⌕</span>Find</button>
+      <button class="active" data-tab="playlists" type="button"><span>▦</span>Playlists</button>
       <button data-tab="decks" type="button"><span>▣</span>Decks</button>
       <button data-tab="mix" type="button"><span>⇄</span>Mix</button>
       <button data-tab="fx" type="button"><span>✦</span>FX</button>
-      <button data-tab="audio" type="button"><span>◒</span>Audio</button>
       <button data-tab="settings" type="button"><span>⚙</span>Setup</button>
     </nav>
   </div>
+
+  <svg class="filter-defs" aria-hidden="true" width="0" height="0">
+    <defs>
+      <filter id="ivj-rgb" x="-20%" y="-10%" width="140%" height="120%" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceGraphic" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red"/>
+        <feOffset id="ivjRgbRedOffset" in="red" dx="10" result="redShift"/>
+        <feColorMatrix in="SourceGraphic" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="green"/>
+        <feColorMatrix in="SourceGraphic" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue"/>
+        <feOffset id="ivjRgbBlueOffset" in="blue" dx="-10" result="blueShift"/>
+        <feBlend in="redShift" in2="green" mode="screen" result="rg"/>
+        <feBlend in="rg" in2="blueShift" mode="screen"/>
+      </filter>
+
+      <filter id="ivj-trails" x="-20%" y="-10%" width="140%" height="120%">
+        <feOffset id="ivjTrailLeft" in="SourceGraphic" dx="-18" result="left"/>
+        <feComponentTransfer in="left" result="leftGhost"><feFuncA id="ivjTrailAlphaLeft" type="linear" slope=".22"/></feComponentTransfer>
+        <feOffset id="ivjTrailRight" in="SourceGraphic" dx="18" result="right"/>
+        <feComponentTransfer in="right" result="rightGhost"><feFuncA id="ivjTrailAlphaRight" type="linear" slope=".18"/></feComponentTransfer>
+        <feMerge><feMergeNode in="leftGhost"/><feMergeNode in="rightGhost"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+
+      <filter id="ivj-edges" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+        <feConvolveMatrix in="SourceGraphic" order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true" result="edge"/>
+        <feComponentTransfer in="edge" result="edgeBoost"><feFuncR type="linear" slope="1.8"/><feFuncG type="linear" slope="1.8"/><feFuncB type="linear" slope="1.8"/><feFuncA id="ivjEdgeAlpha" type="linear" slope=".8"/></feComponentTransfer>
+        <feBlend in="SourceGraphic" in2="edgeBoost" mode="screen"/>
+      </filter>
+
+      <filter id="ivj-neon" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+        <feConvolveMatrix in="SourceGraphic" order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true" result="edge"/>
+        <feGaussianBlur in="edge" stdDeviation="1.6" result="glow"/>
+        <feColorMatrix in="glow" values="0 0 0 0 .1  0 1.5 0 0 0  0 0 2 0 .2  0 0 0 1 0" result="cyanGlow"/>
+        <feBlend in="SourceGraphic" in2="cyanGlow" mode="screen"/>
+      </filter>
+
+      <filter id="ivj-warp" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency=".008 .028" numOctaves="2" seed="7" result="noise"/>
+        <feDisplacementMap id="ivjWarpMap" in="SourceGraphic" in2="noise" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+
+      <filter id="ivj-rgb-trails" x="-25%" y="-15%" width="150%" height="130%" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceGraphic" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red"/>
+        <feOffset id="ivjComboRedOffset" in="red" dx="8" result="redShift"/>
+        <feColorMatrix in="SourceGraphic" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue"/>
+        <feOffset id="ivjComboBlueOffset" in="blue" dx="-8" result="blueShift"/>
+        <feOffset in="SourceGraphic" dy="8" result="echo"/>
+        <feComponentTransfer in="echo" result="faintEcho"><feFuncA type="linear" slope=".18"/></feComponentTransfer>
+        <feBlend in="redShift" in2="SourceGraphic" mode="screen" result="redBase"/>
+        <feBlend in="redBase" in2="blueShift" mode="screen" result="split"/>
+        <feBlend in="split" in2="faintEcho" mode="screen"/>
+      </filter>
+    </defs>
+  </svg>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="./src/main.js"></script>
