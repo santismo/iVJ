@@ -32,6 +32,9 @@ function addImageFallback(image) {
   };
   image.addEventListener("error", fallback, { once: true });
   if (image.complete && image.naturalWidth === 0) queueMicrotask(fallback);
+  setTimeout(() => {
+    if (image.naturalWidth === 0) fallback();
+  }, 1200);
 }
 
 export function renderPlaylistCards(container, playlists, onAction) {
