@@ -1,0 +1,19 @@
+{
+  "name": "iVJ 2 — Visual Performance Mixer",
+  "short_name": "iVJ",
+  "description": "A mobile and desktop visual performance mixer.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07080d",
+  "theme_color": "#07080d",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
