@@ -1,16 +1,14 @@
-const CACHE = "ivj2-shell-v1";
+const CACHE = "ivj2-shell-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./legacy.html",
   "./styles/app.css",
   "./src/main.js",
+  "./src/data/playlists.js",
   "./src/core/store.js",
   "./src/core/mixer.js",
   "./src/core/effects.js",
-  "./src/core/audio.js",
-  "./src/discovery/prompt-planner.js",
-  "./src/discovery/ai-planner.js",
   "./src/discovery/invidious-source.js",
   "./src/ui/render.js",
   "./assets/icon.svg",

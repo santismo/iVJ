@@ -13,28 +13,23 @@ export const DEFAULT_STATE = Object.freeze({
     blackout: false
   },
   fx: {
-    scene: "Dream",
-    intensity: 0.65,
-    hue: 0,
-    saturation: 1.2,
-    contrast: 1.1,
+    scene: "Dream Trails",
+    intensity: 0.7,
+    hue: 14,
+    saturation: 1.45,
+    contrast: 1.08,
     brightness: 1,
-    blur: 0,
-    zoom: 1,
+    blur: 0.18,
+    zoom: 1.025,
+    rotation: 0,
+    mirrorX: false,
+    mirrorY: false,
+    filterMode: "trails",
+    geometry: "none",
     scanlines: false,
     vignette: true,
-    noise: false,
+    noise: true,
     autoRoll: false
-  },
-  audio: {
-    sensitivity: 1.4,
-    pulse: true,
-    color: false,
-    beatCuts: false
-  },
-  discovery: {
-    prompt: "",
-    lastPlan: null
   },
   decks: {
     A: { queue: [], index: -1 },
@@ -42,7 +37,6 @@ export const DEFAULT_STATE = Object.freeze({
   },
   settings: {
     invidiousBase: "",
-    aiProxyUrl: "",
     quality: "auto"
   }
 });
@@ -55,6 +49,7 @@ function deepMerge(base, incoming) {
   if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) return base;
   const output = { ...base };
   for (const [key, value] of Object.entries(incoming)) {
+    if (!(key in base)) continue;
     if (value && typeof value === "object" && !Array.isArray(value) && base?.[key] && typeof base[key] === "object") {
       output[key] = deepMerge(base[key], value);
     } else {
@@ -145,7 +140,7 @@ export class SessionStore {
   exportJson() {
     return JSON.stringify({
       app: "iVJ",
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       state: persistentState(this.state)
     }, null, 2);
