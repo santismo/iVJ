@@ -23,10 +23,15 @@ export function renderScenes(container, scenes, activeName, onSelect) {
 }
 
 function addImageFallback(image) {
-  image.addEventListener("error", () => {
+  let used = false;
+  const fallback = () => {
+    if (used) return;
+    used = true;
     image.referrerPolicy = "";
     image.src = "./assets/icon.svg";
-  }, { once: true });
+  };
+  image.addEventListener("error", fallback, { once: true });
+  if (image.complete && image.naturalWidth === 0) queueMicrotask(fallback);
 }
 
 export function renderPlaylistCards(container, playlists, onAction) {
