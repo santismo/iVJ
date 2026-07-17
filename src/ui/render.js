@@ -22,6 +22,13 @@ export function renderScenes(container, scenes, activeName, onSelect) {
   }
 }
 
+function addImageFallback(image) {
+  image.addEventListener("error", () => {
+    image.referrerPolicy = "";
+    image.src = "./assets/icon.svg";
+  }, { once: true });
+}
+
 export function renderPlaylistCards(container, playlists, onAction) {
   container.replaceChildren();
   for (const playlist of playlists) {
@@ -34,6 +41,7 @@ export function renderPlaylistCards(container, playlists, onAction) {
     image.referrerPolicy = "no-referrer";
     image.alt = "";
     image.src = playlist.thumbnail || playlist.items?.[0]?.thumbnail || "./assets/icon.svg";
+    addImageFallback(image);
 
     const body = document.createElement("div");
     body.className = "playlist-card-body";
@@ -71,6 +79,7 @@ export function renderDeck({ deck, snapshot, queueContainer, nowContainer, count
     image.alt = "";
     image.referrerPolicy = "no-referrer";
     image.src = snapshot.current.thumbnail || "./assets/icon.svg";
+    addImageFallback(image);
     const text = document.createElement("div");
     const eyebrow = document.createElement("span");
     eyebrow.textContent = `DECK ${deck} · ${String(snapshot.status || "ready").toUpperCase()}`;
@@ -93,6 +102,7 @@ export function renderDeck({ deck, snapshot, queueContainer, nowContainer, count
     image.referrerPolicy = "no-referrer";
     image.alt = "";
     image.src = item.thumbnail || "./assets/icon.svg";
+    addImageFallback(image);
     const position = document.createElement("b");
     position.textContent = String(index + 1).padStart(2, "0");
     const title = document.createElement("span");

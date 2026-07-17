@@ -1,4 +1,4 @@
-const CACHE = "ivj2-shell-v2";
+const CACHE = "ivj2-shell-v3";
 const SHELL = [
   "./",
   "./index.html",
@@ -37,9 +37,11 @@ self.addEventListener("fetch", event => {
     return;
   }
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request).then(response => {
-      if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
-      return response;
-    }))
+    fetch(request)
+      .then(response => {
+        if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
